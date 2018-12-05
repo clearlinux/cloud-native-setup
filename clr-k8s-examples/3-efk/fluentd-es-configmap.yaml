@@ -320,7 +320,7 @@ data:
     <source>
       @id journald-container-runtime
       @type systemd
-      matches [{ "_SYSTEMD_UNIT": "{{ container_runtime }}.service" }]
+      matches [{ "_SYSTEMD_UNIT": "crio.service" }]
       <storage>
         @type local
         persistent true
@@ -330,16 +330,16 @@ data:
       tag container-runtime
     </source>
 
-    <source>
-      @type systemd
-      path /var/log/journal
-      matches [{"SYSLOG_IDENTIFIER": "kata-runtime"}, {"SYSLOG_IDENTIFIER": "kata-proxy"}, {"SYSLOG_IDENTIFIER": "kata-shim"}]
-      tag kata-containers
-      <entry>
-        fields_strip_underscores true
-        fields_lowercase true
-      </entry>
-    </source>
+    # <source>
+    #   @type systemd
+    #   path /var/log/journal
+    #   matches [{"SYSLOG_IDENTIFIER": "kata-runtime"}, {"SYSLOG_IDENTIFIER": "kata-proxy"}, {"SYSLOG_IDENTIFIER": "kata-shim"}]
+    #   tag kata-containers
+    #   <entry>
+    #     fields_strip_underscores true
+    #     fields_lowercase true
+    #   </entry>
+    # </source>
 
     <source>
       @id journald-kubelet
