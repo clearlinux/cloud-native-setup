@@ -54,26 +54,26 @@ sudo modprobe br_netfilter vhost_vsock overlay
 
 set +o nounset
 if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
-  echo "Setting up proxy stuff...."
-  # Setup IP for users too
-  sed_val=${ADD_NO_PROXY//\//\\/}
-  [ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
-  if [ -f /etc/profile.d/proxy.sh ]; then
-	  sudo sed -i "/no_proxy/I s/\"$/,${sed_val}\"/g" /etc/profile.d/proxy.sh
-  else
-	  echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
-  fi
+	echo "Setting up proxy stuff...."
+	# Setup IP for users too
+	sed_val=${ADD_NO_PROXY//\//\\/}
+	[ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
+	if [ -f /etc/profile.d/proxy.sh ]; then
+		sudo sed -i "/no_proxy/I s/\"$/,${sed_val}\"/g" /etc/profile.d/proxy.sh
+	else
+		echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
+	fi
 
-  services=('crio' 'docker' 'kubelet')
-  for s in "${services[@]}"; do
-    sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-    cat << EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
+	services=('crio' 'docker' 'kubelet')
+	for s in "${services[@]}"; do
+		sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
+		cat << EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
 [Service]
 Environment="HTTP_PROXY=${http_proxy}"
 Environment="HTTPS_PROXY=${https_proxy}"
 Environment="SOCKS_PROXY=${socks_proxy}"
 Environment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
 EOF
-  done
+	done
 fi
 set -o nounset
