@@ -20,14 +20,14 @@ else
 fi
 
 sudo mkdir -p /etc/sysctl.d/
-cat <<EOT | sudo tee /etc/sysctl.d/60-k8s.conf
+cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
 net.ipv4.ip_forward=1
 EOT
 sudo systemctl restart systemd-sysctl
 
 #Ensure the modules we need are preloaded
 sudo mkdir -p /etc/modules-load.d/
-cat <<EOT | sudo tee /etc/modules-load.d/k8s.conf
+cat <<EOT | sudo bash -c "cat > /etc/modules-load.d/k8s.conf"
 br_netfilter
 vhost_vsock
 overlay
@@ -35,7 +35,7 @@ EOT
 
 hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
 if [ "$hostcount" == "0" ]; then
-	echo "127.0.0.1 localhost `hostname`" | sudo tee -a /etc/hosts
+	echo "127.0.0.1 localhost `hostname`" | sudo bash -c "cat >> /etc/hosts"
 else
 	echo "/etc/hosts already configured"
 fi
@@ -43,10 +43,11 @@ fi
 sudo systemctl daemon-reload
 # This will fail at this point, but puts it into a retry loop that
 # will therefore startup later once we have configured with kubeadm.
+echo "The following kubelet command may complain... it is not an error"
 sudo systemctl enable --now kubelet crio || true
 
 sudo mkdir -p /usr/libexec/cni /opt/cni
-sudo ln -s /usr/libexec/cni /opt/cni/bin
+[ ! -e /opt/cni/bin/cni ] && sudo ln -s /usr/libexec/cni /opt/cni/bin
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
 sudo modprobe br_netfilter vhost_vsock overlay
@@ -56,13 +57,17 @@ if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
   echo "Setting up proxy stuff...."
   # Setup IP for users too
   sed_val=${ADD_NO_PROXY//\//\\/}
-  sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
-  sudo sed -i "/no_proxy/I s/\"$/,${sed_val}\"/g" /etc/profile.d/proxy.sh
+  [ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
+  if [ -f /etc/profile.d/proxy.sh ]; then
+	  sudo sed -i "/no_proxy/I s/\"$/,${sed_val}\"/g" /etc/profile.d/proxy.sh
+  else
+	  echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
+  fi
 
   services=('crio' 'docker' 'kubelet')
   for s in "${services[@]}"; do
     sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-    cat << EOF | sudo tee "/etc/systemd/system/${s}.service.d/proxy.conf"
+    cat << EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
 [Service]
 Environment="HTTP_PROXY=${http_proxy}"
 Environment="HTTPS_PROXY=${https_proxy}"
