@@ -77,3 +77,9 @@ EOF
 	done
 fi
 set -o nounset
+
+# We have potentially modified their env files, we need to restart the services.
+sudo systemctl daemon-reload
+sudo systemctl restart crio || true
+sudo systemctl restart docker || true
+sudo systemctl restart kubelet || true
