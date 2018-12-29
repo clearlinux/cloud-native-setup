@@ -1,0 +1,19 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: sriov-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+      "resourceList":
+      [
+        {
+          "resourceName": "sriov",
+          "rootDevices": ["0000:07:00.0"],
+          "sriovMode": true,
+          "deviceType": "netdevice"
+        }
+      ]
+    }
