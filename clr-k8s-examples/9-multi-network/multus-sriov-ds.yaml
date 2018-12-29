@@ -1,0 +1,204 @@
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  # name must match the spec fields below, and be in the form: <plural>.<group>
+  name: network-attachment-definitions.k8s.cni.cncf.io
+spec:
+  # group name to use for REST API: /apis/<group>/<version>
+  group: k8s.cni.cncf.io
+  # version name to use for REST API: /apis/<group>/<version>
+  version: v1
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    plural: network-attachment-definitions
+    # singular name to be used as an alias on the CLI and for display
+    singular: network-attachment-definition
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: NetworkAttachmentDefinition
+    # shortNames allow shorter string to match your resource on the CLI
+    shortNames:
+    - net-attach-def
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multus-sa
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: multus-sa-secret
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: multus-sa
+type: kubernetes.io/service-account-token
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus-pod-networks-lister
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["update"]
+- apiGroups: ["k8s.cni.cncf.io"]
+  resources: ["*"]
+  verbs: ["get"]
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-certs
+  namespace: kube-system
+data:
+  install-certs.sh: |
+    # Copied from Calico
+    # https://github.com/projectcalico/cni-plugin/blob/master/k8s-install/scripts/install-cni.sh
+    touch /host/etc/cni/net.d/multus-kubeconfig
+    chmod 600 /host/etc/cni/net.d/multus-kubeconfig
+    SERVICE_ACCOUNT_PATH=/var/run/secrets/multus/serviceaccount
+    KUBE_CA_FILE=$SERVICE_ACCOUNT_PATH/ca.crt
+    TLS_CFG="certificate-authority-data: $(cat $KUBE_CA_FILE | base64 | tr -d '\n')"
+    SERVICEACCOUNT_TOKEN=$(cat $SERVICE_ACCOUNT_PATH/token)
+    cat > /host/etc/cni/net.d/multus-kubeconfig <<EOF
+    # Kubeconfig file for Multus CNI plugin.
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - name: local
+      cluster:
+        server: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
+        $TLS_CFG
+    users:
+    - name: multus
+      user:
+        token: "${SERVICEACCOUNT_TOKEN}"
+    contexts:
+    - name: multus-context
+      context:
+        cluster: local
+        user: multus
+    current-context: multus-context
+    EOF
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus-rb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multus-pod-networks-lister
+subjects:
+- kind: ServiceAccount
+  name: multus-sa
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: sriov-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+      matchLabels:
+        name: sriov-device-plugin
+  template:
+    metadata:
+      labels:
+        name: sriov-device-plugin
+    spec:
+      initContainers:
+      - name: init-sriov-dp
+        image: ngick8stesting/aio-cni:k8s-1.13
+        command: [ "bash", "-c" ]
+        args:
+        - cp /tmp/cni/bin/{multus,sriov} /host/opt/cni/bin/;
+          cp /tmp/etc/cni/net.d/* /host/etc/cni/net.d/;
+          /tmp/multus/install-certs.sh;
+          systemctl stop kubelet;
+          cp /tmp/bin/kubelet /host/usr/bin/kubelet;
+          echo "Restarting crio/containerd, kubelet";
+          systemctl daemon-reload;
+          systemctl restart containerd;
+          systemctl restart crio;
+          systemctl restart kubelet;
+        volumeMounts:
+        - name: usr-bin
+          mountPath: /host/usr/bin
+        - name: cni-bin
+          mountPath: /host/opt/cni/bin
+        - name: multus-cm
+          mountPath: /tmp/etc/cni/net.d
+        - name: multus-sa
+          mountPath: /var/run/secrets/multus/serviceaccount
+        - name: multus-certs
+          mountPath: /tmp/multus
+        - name: cni-conf
+          mountPath: /host/etc/cni/net.d
+        - name: dbus
+          mountPath: /var/run/dbus
+        - name: systemd
+          mountPath: /run/systemd
+      containers:
+      - name: sriov-dp
+        image: ngick8stesting/aio-cni:k8s-1.13
+        command: [ "sh", "-c" ]
+        args:
+        - /usr/bin/sriovdp --logtostderr -v 10;
+          echo "exit status $?";
+        volumeMounts:
+        - name: net
+          mountPath: /sys/class/net
+          readOnly: true
+        - name: dp-sock
+          mountPath: /var/lib/kubelet/device-plugins/
+          readOnly: false
+        - mountPath: /etc/pcidp
+          name: sriov-config
+          readOnly: false
+      volumes:
+      - name: sriov-config
+        configMap:
+          name: sriov-config
+      - name: usr-bin
+        hostPath:
+          path: /usr/bin
+      - name: cni-bin
+        hostPath:
+          path: /opt/cni/bin
+      - name: multus-cm
+        configMap:
+          name: multus-conf
+      - name: multus-sa
+        secret:
+          secretName: multus-sa-secret
+      - name: multus-certs
+        configMap:
+          defaultMode: 511
+          name: multus-certs
+      - name: cni-conf
+        hostPath:
+          path: /etc/cni/net.d
+      - name: dbus
+        hostPath:
+          path: /var/run/dbus
+      - name: systemd
+        hostPath:
+          path: /run/systemd
+      - name: net
+        hostPath:
+          path: /sys/class/net
+      - name: dp-sock
+        hostPath:
+          path: /var/lib/kubelet/device-plugins/
+      hostNetwork: true
+      hostPID: true
+

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multus-conf
+  namespace: kube-system
+data:
+  01-cni-conf.json: |
+    {
+      "name": "multus-cni-network",
+      "type": "multus",
+      "delegates": [
+        {
+          "type": "flannel",
+          "delegate": {
+            "isDefaultGateway": true
+          }
+        }
+      ],
+      "kubeconfig": "/etc/cni/net.d/multus-kubeconfig"
+    }
+
