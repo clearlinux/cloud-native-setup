@@ -64,7 +64,7 @@ if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
 		echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
 	fi
 
-	services=('crio' 'docker' 'kubelet')
+	services=('crio' 'kubelet')
 	for s in "${services[@]}"; do
 		sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
 		cat << EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
@@ -81,5 +81,4 @@ set -o nounset
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
 sudo systemctl restart crio || true
-sudo systemctl restart docker || true
 sudo systemctl restart kubelet || true
