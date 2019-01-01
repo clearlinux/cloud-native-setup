@@ -11,7 +11,7 @@ data:
       [
         {
           "resourceName": "sriov",
-          "rootDevices": ["0000:07:00.0"],
+          "rootDevices": ["07:00.0", "07:00.1"],
           "sriovMode": true,
           "deviceType": "netdevice"
         }
