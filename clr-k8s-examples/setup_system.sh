@@ -35,7 +35,7 @@ EOT
 
 hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
 if [ "$hostcount" == "0" ]; then
-	echo "127.0.0.1 localhost `hostname`" | sudo bash -c "cat >> /etc/hosts"
+	echo "127.0.0.1 localhost $(hostname)" | sudo bash -c "cat >> /etc/hosts"
 else
 	echo "/etc/hosts already configured"
 fi
@@ -67,7 +67,7 @@ if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
 	services=('crio' 'kubelet')
 	for s in "${services[@]}"; do
 		sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-		cat << EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
+		cat <<EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
 [Service]
 Environment="HTTP_PROXY=${http_proxy}"
 Environment="HTTPS_PROXY=${https_proxy}"
