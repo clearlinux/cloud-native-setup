@@ -3,6 +3,9 @@
 set -o errexit
 set -o nounset
 
+CUR_DIR=$(pwd)
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+
 ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
@@ -77,6 +80,8 @@ EOF
 	done
 fi
 set -o nounset
+
+sudo $SCRIPT_DIR/setup_firecracker.sh
 
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
