@@ -14,7 +14,6 @@ for pod in $(sudo crictl pods --quiet); do
 	sudo crictl rmp "$pod"
 done
 
-
 #Forcefull cleanup all artifacts
 #This is needed is things really go wrong
 sudo systemctl stop kubelet
@@ -45,4 +44,3 @@ sudo systemctl restart crio
 sudo systemctl restart kubelet
 
 sudo -E kubeadm reset -f --cri-socket="/var/run/crio/crio.sock"
-
