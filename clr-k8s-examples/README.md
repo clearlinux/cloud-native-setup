@@ -27,6 +27,15 @@ master and also uses kubelet config via [`kubeadm.yaml`](kubeadm.yaml)
 to propagate cluster wide kubelet configuration to all workers. Customize it if
 you need to setup other cluster wide properties.
 
+There are two flavors of install -
+- `minimal`: initialize cluster, add kata runtimeclass, install canal CNI and metrics server
+- `all`: minimal, install rook storage, prometheus, ELK, nginx-ingress, etc.,
+
+```bash
+# default is 'all'
+./create_stack.sh [minimal|all]
+```
+
 ## Join Workers to the cluster
 
 ```bash
