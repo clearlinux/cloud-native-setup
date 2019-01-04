@@ -2,17 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    run: php-apache-fire
-  name: php-apache-fire
+    run: php-apache-kata-fc
+  name: php-apache-kata-fc
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: php-apache-fire
+      run: php-apache-kata-fc
   template:
     metadata:
       labels:
-        run: php-apache-fire
+        run: php-apache-kata-fc
     spec:
       runtimeClassName: kata-fc
       containers:
@@ -30,13 +30,13 @@ spec:
 apiVersion: v1 
 kind: Service
 metadata:
-  name: php-apache-fire
+  name: php-apache-kata-fc
 spec:
   ports:
   - port: 80
     protocol: TCP
     targetPort: 80
   selector:
-    run: php-apache-fire
+    run: php-apache-kata-fc
   sessionAffinity: None
   type: ClusterIP

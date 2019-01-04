@@ -2,22 +2,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    run: php-apache-kata
-  name: php-apache-kata
+    run: php-apache-kata-qemu
+  name: php-apache-kata-qemu
 spec:
   replicas: 1
   selector:
     matchLabels:
-      run: php-apache-kata
+      run: php-apache-kata-qemu
   template:
     metadata:
       annotations:
         io.kubernetes.cri-o.TrustedSandbox: "false"
         io.kubernetes.cri.untrusted-workload: "true"
       labels:
-        run: php-apache-kata
+        run: php-apache-kata-qemu
     spec:
-      runtimeClassName: kata
+      runtimeClassName: kata-qemu
       containers:
       - image: k8s.gcr.io/hpa-example
         imagePullPolicy: Always
@@ -33,13 +33,13 @@ spec:
 apiVersion: v1 
 kind: Service
 metadata:
-  name: php-apache-kata
+  name: php-apache-kata-qemu
 spec:
   ports:
   - port: 80
     protocol: TCP
     targetPort: 80
   selector:
-    run: php-apache-kata
+    run: php-apache-kata-qemu
   sessionAffinity: None
   type: ClusterIP
