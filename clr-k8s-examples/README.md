@@ -20,6 +20,11 @@ This script ensures the following
 * Customizes the system to ensure correct defaults are setup (IP Forwarding, Swap off,...)
 * Ensures all the dependencies are loaded on boot (kernel modules)
 
+> EXPERIMENTAL: Optionally run [`setup_firecracker.sh`](setup_firecracker.sh) to be
+able to use firecracker VMM with Kata.
+
+> NOTE: These steps are already done if using vagrant
+
 ## Bring up the master
 
 Run [`create_stack.sh`](create_stack.sh) on the master node. This sets up the

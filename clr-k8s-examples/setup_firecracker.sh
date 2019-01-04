@@ -1,9 +1,13 @@
 #!/bin/bash
 
-mkdir -p /etc/kata-containers
+set -o errexit
+set -o pipefail
+set -o nounset
+
+sudo mkdir -p /etc/kata-containers
 
 # Setup a configuration to be used by firecracker
-cat <<EOT | tee /etc/kata-containers/configuration_firecracker.toml
+cat <<EOT | sudo tee /etc/kata-containers/configuration_firecracker.toml
 [hypervisor.firecracker]
 path = "/usr/bin/firecracker"
 kernel = "/usr//share/kata-containers/vmlinux.container"
@@ -29,14 +33,14 @@ EOT
 
 # Firecracker can only work with devicemapper
 # Setup a sparse disk to be used for devicemapper
-rm -f /var/lib/crio/devicemapper/disk.img
-mkdir -p /var/lib/crio/devicemapper
-truncate /var/lib/crio/devicemapper/disk.img --size 10G
+sudo rm -f /var/lib/crio/devicemapper/disk.img
+sudo mkdir -p /var/lib/crio/devicemapper
+sudo truncate /var/lib/crio/devicemapper/disk.img --size 10G
 
 # Ensure that this disk is loop mounted at each boot
-mkdir -p /etc/systemd/system
+sudo mkdir -p /etc/systemd/system
 
-cat <<EOT | tee /etc/systemd/system/devicemapper.service
+cat <<EOT | sudo tee /etc/systemd/system/devicemapper.service
 [Unit]
 Description=Setup CRIO devicemapper
 DefaultDependencies=no
@@ -53,34 +57,36 @@ Type=oneshot
 WantedBy=local-fs.target
 EOT
 
-systemctl daemon-reload
-systemctl start devicemapper
+sudo systemctl daemon-reload
+sudo systemctl enable --now devicemapper
 
 # For now till we address https://github.com/kubernetes-sigs/cri-o/issues/1991
 # use a shell script to expose firecracker through kata
-cat <<EOT | tee /usr/bin/kata-runtime-fire
+cat <<EOT | sudo tee /usr/bin/kata-runtime-fire
 #!/bin/bash
 
 /usr/bin/kata-runtime --kata-config /etc/kata-containers/configuration_firecracker.toml "\$@"
 EOT
 
-chmod +x /usr/bin/kata-runtime-fire
+sudo chmod +x /usr/bin/kata-runtime-fire
 
 # Add firecracker as a second runtime
 # Also setup crio to use devicemapper
 
-mkdir -p /etc/crio/
-cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
+sudo mkdir -p /etc/crio/
+sudo cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
 
-echo -e "\n[crio.runtime.runtimes.kata]\nruntime_path = \"/usr/bin/kata-runtime\"" >> /etc/crio/crio.conf
-echo -e "\n[crio.runtime.runtimes.fire]\nruntime_path = \"/usr/bin/kata-runtime-fire\"" >> /etc/crio/crio.conf
+echo -e "\n[crio.runtime.runtimes.kata]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
+echo -e "\n[crio.runtime.runtimes.fire]\nruntime_path = \"/usr/bin/kata-runtime-fire\"" | sudo tee -a /etc/crio/crio.conf
 
-sed -i 's|\(\[crio\.runtime\]\)|\1\nmanage_network_ns_lifecycle = true|' /etc/crio/crio.conf
+sudo sed -i 's|\(\[crio\.runtime\]\)|\1\nmanage_network_ns_lifecycle = true|' /etc/crio/crio.conf
 
-sed -i 's/storage_driver = \"overlay\"/storage_driver = \"devicemapper\"\
+sudo sed -i 's/storage_driver = \"overlay\"/storage_driver = \"devicemapper\"\
 storage_option = [\
   \"dm.basesize=8G\",\
   \"dm.directlvm_device=\/dev\/loop8\",\
   \"dm.directlvm_device_force=true\",\
   \"dm.fs=ext4\"\
 ]/g' /etc/crio/crio.conf
+
+sudo systemctl restart crio || true

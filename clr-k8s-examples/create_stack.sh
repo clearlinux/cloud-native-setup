@@ -45,7 +45,7 @@ function runtimeclass_kata() {
 		echo "Waiting for runtime class CRD"
 		sleep 2
 	done
-	kubectl apply -f 8-kata/kata-runtimeClass.yaml
+	kubectl apply -f 8-kata/
 }
 
 function cni() {
