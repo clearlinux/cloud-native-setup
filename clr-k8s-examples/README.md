@@ -20,10 +20,18 @@ This script ensures the following
 * Customizes the system to ensure correct defaults are setup (IP Forwarding, Swap off,...)
 * Ensures all the dependencies are loaded on boot (kernel modules)
 
+> NOTE: This step is done automatically if using vagrant. 
+
+### Enabling experimental firecracker support
+
 > EXPERIMENTAL: Optionally run [`setup_firecracker.sh`](setup_firecracker.sh) to be
 able to use firecracker VMM with Kata.
 
-> NOTE: These steps are already done if using vagrant
+The firecracker setup switches the setup to use a sparse file backed loop device for
+devicemapper storage. This should not be used for production.
+
+> NOTE: This step is done automatically if using vagrant. 
+
 
 ## Bring up the master
 
@@ -66,6 +74,15 @@ runtime class set to "kata" will launch the POD/Deployment with Kata.
 An example is
 
 `kubectl apply -f tests/test-deploy-kata.yaml`
+
+### Running Kata Workloads with Firecracker
+
+> EXPERIMENTAL: If firecracker setup has been enabled, runtime class set to "fire" will launch the POD/Deployment
+with firecracker as the isolation mechanism for Kata.
+
+An example is
+
+`kubectl apply -f tests/test-deploy-fire.yaml`
 
 ## Making Kata the default runtime
 
