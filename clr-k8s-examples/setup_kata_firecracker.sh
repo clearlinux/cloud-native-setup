@@ -62,13 +62,13 @@ sudo systemctl enable --now devicemapper
 
 # For now till we address https://github.com/kubernetes-sigs/cri-o/issues/1991
 # use a shell script to expose firecracker through kata
-cat <<EOT | sudo tee /usr/bin/kata-runtime-fire
+cat <<EOT | sudo tee /usr/bin/kata-fc
 #!/bin/bash
 
 /usr/bin/kata-runtime --kata-config /etc/kata-containers/configuration_firecracker.toml "\$@"
 EOT
 
-sudo chmod +x /usr/bin/kata-runtime-fire
+sudo chmod +x /usr/bin/kata-fc
 
 # Add firecracker as a second runtime
 # Also setup crio to use devicemapper
@@ -76,8 +76,8 @@ sudo chmod +x /usr/bin/kata-runtime-fire
 sudo mkdir -p /etc/crio/
 sudo cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
 
-echo -e "\n[crio.runtime.runtimes.kata]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
-echo -e "\n[crio.runtime.runtimes.fire]\nruntime_path = \"/usr/bin/kata-runtime-fire\"" | sudo tee -a /etc/crio/crio.conf
+echo -e "\n[crio.runtime.runtimes.kata-qemu]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
+echo -e "\n[crio.runtime.runtimes.kata-fc]\nruntime_path = \"/usr/bin/kata-fc\"" | sudo tee -a /etc/crio/crio.conf
 
 sudo sed -i 's|\(\[crio\.runtime\]\)|\1\nmanage_network_ns_lifecycle = true|' /etc/crio/crio.conf
 

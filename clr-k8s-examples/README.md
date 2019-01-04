@@ -24,7 +24,7 @@ This script ensures the following
 
 ### Enabling experimental firecracker support
 
-> EXPERIMENTAL: Optionally run [`setup_firecracker.sh`](setup_firecracker.sh) to be
+> EXPERIMENTAL: Optionally run [`setup_kata_firecracker.sh`](setup_kata_firecracker.sh) to be
 able to use firecracker VMM with Kata.
 
 The firecracker setup switches the setup to use a sparse file backed loop device for
@@ -77,7 +77,7 @@ An example is
 
 ### Running Kata Workloads with Firecracker
 
-> EXPERIMENTAL: If firecracker setup has been enabled, runtime class set to "fire" will launch the POD/Deployment
+> EXPERIMENTAL: If firecracker setup has been enabled, runtime class set to "kata-fc" will launch the POD/Deployment
 with firecracker as the isolation mechanism for Kata.
 
 An example is

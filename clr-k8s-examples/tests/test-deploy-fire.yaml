@@ -14,7 +14,7 @@ spec:
       labels:
         run: php-apache-fire
     spec:
-      runtimeClassName: fire
+      runtimeClassName: kata-fc
       containers:
       - image: k8s.gcr.io/hpa-example
         imagePullPolicy: Always
