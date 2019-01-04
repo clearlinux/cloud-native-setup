@@ -3,9 +3,6 @@
 set -o errexit
 set -o nounset
 
-CUR_DIR=$(pwd)
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-
 ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
@@ -53,7 +50,7 @@ sudo mkdir -p /usr/libexec/cni /opt/cni
 [ ! -e /opt/cni/bin/cni ] && sudo ln -s /usr/libexec/cni /opt/cni/bin
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
-sudo modprobe br_netfilter vhost_vsock overlay
+sudo systemctl restart systemd-modules-load.service
 
 set +o nounset
 if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
@@ -80,8 +77,6 @@ EOF
 	done
 fi
 set -o nounset
-
-sudo $SCRIPT_DIR/setup_firecracker.sh
 
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
