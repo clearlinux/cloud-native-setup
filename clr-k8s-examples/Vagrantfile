@@ -75,7 +75,7 @@ Vagrant.configure("2") do |config|
       # Bad hack for the vagrant libvirt boxes. WIll be removed once they are fixed.
       c.vm.provision "shell", privileged: false, inline: "sudo usermod --password vagrant root"
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
-      c.vm.provision "shell", privileged: false, path: "setup_firecracker.sh"
+      c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
     end
   end
 end
