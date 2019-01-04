@@ -73,7 +73,7 @@ runtime class set to "kata" will launch the POD/Deployment with Kata.
 
 An example is
 
-`kubectl apply -f tests/test-deploy-kata.yaml`
+`kubectl apply -f tests/test-deploy-kata-qemu.yaml`
 
 ### Running Kata Workloads with Firecracker
 
@@ -82,7 +82,7 @@ with firecracker as the isolation mechanism for Kata.
 
 An example is
 
-`kubectl apply -f tests/test-deploy-fire.yaml`
+`kubectl apply -f tests/test-deploy-kata-fc.yaml`
 
 ## Making Kata the default runtime
 
