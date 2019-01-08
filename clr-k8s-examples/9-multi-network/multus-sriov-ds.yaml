@@ -55,7 +55,7 @@ rules:
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: multus-certs
+  name: multus-scripts
   namespace: kube-system
 data:
   install-certs.sh: |
@@ -87,6 +87,21 @@ data:
         user: multus
     current-context: multus-context
     EOF
+  install-multus-conf.sh: |
+    # copied from https://github.com/intel/multus-cni/blob/master/images/entrypoint.sh
+    rm -f /host/etc/cni/net.d/00-multus.conf
+    MASTER_PLUGIN="$(ls /host/etc/cni/net.d | grep -E '\.conf(list)?$' | head -1)"
+    MASTER_PLUGIN_JSON="$(cat /host/etc/cni/net.d/$MASTER_PLUGIN)"
+    cat > /host/etc/cni/net.d/00-multus.conf <<EOF
+    {
+      "name": "multus-cni-network",
+      "type": "multus",
+      "kubeconfig": "/etc/cni/net.d/multus-kubeconfig",
+      "delegates": [
+                    $MASTER_PLUGIN_JSON
+       ]
+    }
+    EOF
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -116,17 +131,15 @@ spec:
         name: sriov-device-plugin
     spec:
       initContainers:
-      - name: init-sriov-dp
+      - name: multus
         image: ngick8stesting/aio-cni:k8s-1.13
         command: [ "bash", "-c" ]
         args:
         - cp /tmp/cni/bin/{multus,sriov} /host/opt/cni/bin/;
-          cp /tmp/etc/cni/net.d/* /host/etc/cni/net.d/;
+          /tmp/multus/install-multus-conf.sh;
           /tmp/multus/install-certs.sh;
           systemctl stop kubelet;
-          cp /tmp/bin/kubelet /host/usr/bin/kubelet;
           echo "Restarting crio/containerd, kubelet";
-          systemctl daemon-reload;
           systemctl restart containerd;
           systemctl restart crio;
           systemctl restart kubelet;
@@ -135,11 +148,9 @@ spec:
           mountPath: /host/usr/bin
         - name: cni-bin
           mountPath: /host/opt/cni/bin
-        - name: multus-cm
-          mountPath: /tmp/etc/cni/net.d
         - name: multus-sa
           mountPath: /var/run/secrets/multus/serviceaccount
-        - name: multus-certs
+        - name: multus-scripts
           mountPath: /tmp/multus
         - name: cni-conf
           mountPath: /host/etc/cni/net.d
@@ -148,12 +159,12 @@ spec:
         - name: systemd
           mountPath: /run/systemd
       containers:
-      - name: sriov-dp
+      - name: sriovdp
         image: ngick8stesting/aio-cni:k8s-1.13
         command: [ "sh", "-c" ]
         args:
         - /usr/bin/sriovdp --logtostderr -v 10;
-          echo "exit status $?";
+          sleep infinity;
         volumeMounts:
         - name: net
           mountPath: /sys/class/net
@@ -174,16 +185,13 @@ spec:
       - name: cni-bin
         hostPath:
           path: /opt/cni/bin
-      - name: multus-cm
-        configMap:
-          name: multus-conf
       - name: multus-sa
         secret:
           secretName: multus-sa-secret
-      - name: multus-certs
+      - name: multus-scripts
         configMap:
           defaultMode: 511
-          name: multus-certs
+          name: multus-scripts
       - name: cni-conf
         hostPath:
           path: /etc/cni/net.d
