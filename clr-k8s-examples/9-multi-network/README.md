@@ -5,15 +5,13 @@
 We launch a `Daemonset` with an `initContainer` which sets up the CNI
 directories on the host with the necessary binaries and configuration files.
 
-### Customization
+> NOTE: SR-IOV devices are not necessary to test multi-network capability
 
-Replace `flannel` configuration in the delegates section with contents of your
-default network's cni configuration in [multus-conf.yaml](clr-k8s-examples/9-multi-network/multus-conf.yaml).
+### Customization
 
 The device plugin will register the SR-IOV enabled devices on the host, specified
 as `rootDevices` in [sriov-conf.yaml](clr-k8s-examples/9-multi-network/sriov-conf.yaml).
-
-> Helper [systemd](clr-k8s-examples/9-multi-network/systemd/sriov.service) example config
+Helper [systemd](clr-k8s-examples/9-multi-network/systemd/sriov.service) example config
 is provided, which enables SR-IOV for the above `rootDevices`
 
 > NOTE: This assumes homogenous nodes in the cluster
