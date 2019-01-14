@@ -76,6 +76,8 @@ Vagrant.configure("2") do |config|
       c.vm.provision "shell", privileged: false, inline: "sudo usermod --password vagrant root"
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
       c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
+      # Include shells bundle to get bash completion and add kubectl's commands to vagrant's shell
+      c.vm.provision "shell", privileged: false, inline: 'sudo -E swupd bundle-add shells; echo "source <(kubectl completion bash)" >> $HOME/.bashrc'
     end
   end
 end
