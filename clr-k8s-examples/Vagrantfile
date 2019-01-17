@@ -43,6 +43,9 @@ Vagrant.configure("2") do |config|
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = $box
 
+  # Mount the current dir at home folder instead of default
+  config.vm.synced_folder './', '/vagrant', disabled: true
+  config.vm.synced_folder './', '/home/vagrant/' + File.basename(Dir.getwd), type: 'rsync'
   #Setup proxies for all machines
   (1..$num_instances).each do |i|
     base_ip = base_ip.succ
