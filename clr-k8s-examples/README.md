@@ -2,12 +2,19 @@
 
 ## Sample multi-node vagrant setup
 
-To be able to test this tool, you can create a 3-node vagrant setup. In this tutorial, we will talk about using libvirt, but you can use any hypervisor that you are familiar with.
+To be able to test this tool, you can create a 3-node vagrant setup. In this tutorial, we will talk about using [libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), but you can use any hypervisor that you are familiar with.
 
 * Install vagrant on the distro you are using. Steps can be found at [Vagrant docs](https://www.vagrantup.com/intro/getting-started/install.html#installing-vagrant)
 * `vagrant up --provider=libvirt`
 
 Now you have a 3 node cluster up and running. Each of them have 2 vCPU, 4GB Memory, 2x10GB disks, 1 additional private network.
+
+To login to the master node and change to this directory
+
+```bash
+vagrant ssh clr-01
+cd clr-k8s-examples
+```
 
 ## Setup the nodes in the cluster
 
@@ -20,7 +27,7 @@ This script ensures the following
 * Customizes the system to ensure correct defaults are setup (IP Forwarding, Swap off,...)
 * Ensures all the dependencies are loaded on boot (kernel modules)
 
-> NOTE: This step is done automatically if using vagrant. 
+> NOTE: This step is done automatically if using vagrant.
 
 ### Enabling experimental firecracker support
 
@@ -30,8 +37,7 @@ able to use firecracker VMM with Kata.
 The firecracker setup switches the setup to use a sparse file backed loop device for
 devicemapper storage. This should not be used for production.
 
-> NOTE: This step is done automatically if using vagrant. 
-
+> NOTE: This step is done automatically if using vagrant.
 
 ## Bring up the master
 
@@ -41,8 +47,9 @@ to propagate cluster wide kubelet configuration to all workers. Customize it if
 you need to setup other cluster wide properties.
 
 There are two flavors of install -
-- `minimal`: initialize cluster, add kata runtimeclass, install canal CNI and metrics server
-- `all`: minimal, install rook storage, prometheus, ELK, nginx-ingress, etc.,
+
+* `minimal`: initialize cluster, add kata runtimeclass, install canal CNI and metrics server
+* `all`: minimal, install rook storage, prometheus, ELK, nginx-ingress, etc.,
 
 ```bash
 # default is 'all'
