@@ -96,6 +96,8 @@ data:
     {
       "name": "multus-cni-network",
       "type": "multus",
+      "logFile": "/var/log/multus.log",
+      "logLevel": "debug",
       "kubeconfig": "/etc/cni/net.d/multus-kubeconfig",
       "delegates": [
                     $MASTER_PLUGIN_JSON
@@ -132,10 +134,10 @@ spec:
     spec:
       initContainers:
       - name: multus
-        image: ngick8stesting/aio-cni:k8s-1.13
+        image: krsna1729/multus-sriov:k8s-1.13
         command: [ "bash", "-c" ]
         args:
-        - cp /tmp/cni/bin/{multus,sriov} /host/opt/cni/bin/;
+        - cp /tmp/cni/bin/{multus,sriov,vfioveth,jq} /host/opt/cni/bin/;
           /tmp/multus/install-multus-conf.sh;
           /tmp/multus/install-certs.sh;
           systemctl stop kubelet;
@@ -160,7 +162,7 @@ spec:
           mountPath: /run/systemd
       containers:
       - name: sriovdp
-        image: ngick8stesting/aio-cni:k8s-1.13
+        image: krsna1729/multus-sriov:k8s-1.13
         command: [ "sh", "-c" ]
         args:
         - /usr/bin/sriovdp --logtostderr -v 10;

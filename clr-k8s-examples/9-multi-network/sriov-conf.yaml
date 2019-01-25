@@ -1,3 +1,6 @@
+# If you set "deviceType": "vfio",
+# - uncomment line `bind_vfs_vfio $pf` in systemd/sriov.sh
+# - set "type": "vfioveth" in test/sriov/0-sriov-net.yaml
 ---
 kind: ConfigMap
 apiVersion: v1
