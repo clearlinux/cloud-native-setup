@@ -1,0 +1,67 @@
+#!/bin/bash -x
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+exec 3>&1
+exec &>>/var/log/$(basename $0).log
+
+PATH="$CNI_PATH:$(dirname "${BASH_SOURCE[0]}"):$PATH"
+CNI_CONF=$(cat /dev/stdin)
+
+get_peer_name() {
+	echo "$1-vdev"
+}
+
+get_mac_with_vfpci() {
+	local pf=$(readlink /sys/devices/pci*/*/$1/physfn | awk '{print substr($1,4)}')
+	local pfName=$(ls /sys/devices/pci*/*/$pf/net/ | head -1)
+	local idx=$(ls -l /sys/devices/pci*/*/$pf | awk -v vf=$1 'substr($11,4)==vf {print substr($9,7)}')
+	local mac=$(ip link show dev $pfName | awk -v idx="$idx" '$1=="vf" && $2==idx {print substr($4,1,17)}')
+	echo $mac
+}
+
+ipam() {
+	local plugin=$(echo $CNI_CONF | jq -r '.ipam.type')
+	local res=$(echo $"$CNI_CONF" | "$plugin" | jq -c '.')
+	echo $res
+}
+
+add_pair_ns() {
+	vfpci=$(echo $CNI_CONF | jq -r '.deviceID')
+	mac=$(get_mac_with_vfpci $vfpci)
+	peer=$(get_peer_name $CNI_IFNAME)
+	ip=$1
+
+	mkdir -p /var/run/netns/
+	ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
+
+	ip netns exec $CNI_CONTAINERID ip link add $CNI_IFNAME type veth peer name $peer
+	ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME addr $mac up
+	ip netns exec $CNI_CONTAINERID ip link set $peer up
+	ip netns exec $CNI_CONTAINERID ip addr add $ip dev $CNI_IFNAME
+}
+
+delete_pair_ns() {
+	ip netns exec $CNI_CONTAINERID ip link del $CNI_IFNAME
+}
+
+case $CNI_COMMAND in
+ADD)
+	res=$(ipam)
+	ip=$(echo $res | jq -r '.ip4.ip')
+	add_pair_ns $ip
+	echo '{"cniVersion":"0.2.0"}' | jq -c --arg ip $ip '.ip4.ip = $ip' >&3
+	;;
+DEL)
+	set +o errexit
+	ipam
+	delete_pair_ns
+	set -o errexit
+	;;
+*)
+	echo "CNI_COMMAND=[ADD|DEL] only supported"
+	exit 1
+	;;
+esac
