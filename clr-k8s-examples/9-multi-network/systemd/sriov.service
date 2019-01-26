@@ -1,9 +1,10 @@
 [Unit]
-Description=Create VFs on ens785f0 ens785f1 interfaces
+Description=Create VFs on ens785f0 (netdev) ens785f1 (vfio) interfaces
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sriov.sh ens785f0 ens785f1
+ExecStart=/usr/bin/sriov.sh ens785f0
+ExecStart=/usr/bin/sriov.sh -b ens785f1
 
 [Install]
 WantedBy=default.target

@@ -23,7 +23,7 @@ To install and configure `multus-cni` on all nodes, along with `sriov-cni` and
 
 ```bash
 kubectl apply -f .
-kubectl get nodes -o json | jq '.items[].status.allocatable' # should list "intel.com/sriov"
+kubectl get nodes -o json | jq '.items[].status.allocatable' # should list "intel.com/sriov_*"
 ```
 
 ## Tests
@@ -34,7 +34,7 @@ To test if default connectivity is working
 
 ```bash
 kubectl apply -f test/pod.yaml
-kubectl exec test -- ip a        # should see one interface only
+kubectl exec test -- ip a                        # should see one interface only
 ```
 
 ### Bridge
@@ -43,8 +43,8 @@ To test multus with second interface created by `bridge` plugin
 
 ```bash
 kubectl apply -f test/bridge
-kubectl exec test-bridge -- ip a # should see two interfaces
-ip a show mynet                  # bridge created if it doesnt exist already
+kubectl exec test-bridge -- ip a                 # should see two interfaces
+ip a show mynet                                  # bridge created on host if it doesnt exist already
 ```
 
 ### SR-IOV
@@ -53,5 +53,9 @@ To test multus with second interface created by `sriov` plugin
 
 ```bash
 kubectl apply -f test/sriov
-kubectl exec test-sriov -- ip a  # second interface is a VF
+
+kubectl exec test-sriov -- ip a                  # second interface is a VF
+
+kubectl exec test-sriov-dpdk -- ip a             # veth pair with details of VF
+kubectl exec test-sriov-dpdk -- ls -l /dev/vfio
 ```

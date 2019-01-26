@@ -18,9 +18,9 @@ RUN make
 
 # Build vfioveth plugin
 FROM busybox as vfioveth
-RUN wget -O /bin/vfioveth https://raw.githubusercontent.com/clearlinux/cloud-native-setup/master/clr-k8s-examples/9-multi-network/cni/vfioveth && \
-    wget -O /bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
-    chmod +x /bin/vfioveth /bin/jq
+RUN wget -O /bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+COPY cni/vfioveth /bin/vfioveth
+RUN chmod +x /bin/vfioveth /bin/jq
 
 # Final image
 FROM centos/systemd
