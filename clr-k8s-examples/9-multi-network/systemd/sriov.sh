@@ -1,9 +1,25 @@
 #!/bin/bash
-# Usage: sriov.sh ens785f0 ens785f1 ...
 
 set -o errexit
 set -o pipefail
 set -o nounset
+
+OPTIND=1
+bind="false"
+
+while getopts ":b" opt; do
+	case ${opt} in
+	b)
+		bind="true"
+		;;
+	\?)
+		echo "Usage: sriov.sh [-b] ens785f0 ens785f1 ..."
+		echo "-b	Bind to vfio-pci"
+		exit
+		;;
+	esac
+done
+shift $((OPTIND - 1))
 
 reset_pf() {
 	local pf=$1
@@ -20,6 +36,7 @@ set_pf() {
 }
 
 bind_vfs_vfio() {
+	if [ $bind != "true" ]; then return; fi
 	local pf=$1
 	local pci=$(readlink /sys/devices/pci*/*/*/net/$pf/device | awk '{print substr($1,10)}')
 	echo "Binding VFs of PF $pf ($pci) to vfio-pci"
@@ -45,6 +62,6 @@ setup_vfs() {
 for pf in "$@"; do
 	reset_pf $pf
 	set_pf $pf
-	# bind_vfs_vfio $pf
+	bind_vfs_vfio $pf
 	setup_vfs $pf
 done

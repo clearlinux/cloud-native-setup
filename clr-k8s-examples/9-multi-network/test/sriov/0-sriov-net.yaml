@@ -4,10 +4,29 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: sriov-net
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: intel.com/sriov
+    k8s.v1.cni.cncf.io/resourceName: intel.com/sriov_netdevice
 spec:
   config: '{
     "type": "sriov",
+    "name": "sriov-net",
+    "ipam": {
+        "type": "host-local",
+        "subnet": "198.19.0.0/24",
+        "rangeStart": "198.19.0.100",
+        "rangeEnd": "198.19.0.200",
+        "gateway": "198.19.0.1"
+    }
+}'
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-net-dpdk
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: intel.com/sriov_vfio
+spec:
+  config: '{
+    "type": "vfioveth",
     "name": "sriov-net",
     "ipam": {
         "type": "host-local",
