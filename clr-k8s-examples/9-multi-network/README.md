@@ -9,17 +9,16 @@ directories on the host with the necessary binaries and configuration files.
 
 ### Customization
 
-The device plugin will register the SR-IOV enabled devices on the host, specified
-as `rootDevices` in [sriov-conf.yaml](clr-k8s-examples/9-multi-network/sriov-conf.yaml).
-Helper [systemd](clr-k8s-examples/9-multi-network/systemd/sriov.service) example config
-is provided, which enables SR-IOV for the above `rootDevices`
+The device plugin will register the SR-IOV enabled devices on the host, specified as
+`rootDevices` in [sriov-conf.yaml](sriov-conf.yaml). Helper [systemd unit](systemd/sriov.service)
+file is provided, which enables SR-IOV for the above `rootDevices`
 
 > NOTE: This assumes homogenous nodes in the cluster
 
 ### Install
 
-To install and configure `multus-cni` on all nodes, along with `sriov-cni` and
-`sriov-network-device-plugin` :
+To install and configure `multus-cni` on all nodes, along with
+`sriov-cni`, `vfioveth-cni` and `sriov-network-device-plugin`
 
 ```bash
 kubectl apply -f .
