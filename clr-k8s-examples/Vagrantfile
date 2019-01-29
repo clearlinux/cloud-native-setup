@@ -11,7 +11,7 @@ $cpus = (ENV['CPUS'] || 2).to_i
 $memory = (ENV['MEMORY'] || 4096).to_i
 $disks = 2
 $disk_size = "10G"
-$box = "gmmaha/clearlinux"
+$box = "AntonioMeireles/ClearLinux"
 $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
 $vm_name_prefix = "clr"
 base_ip = IPAddr.new("192.52.100.10")
@@ -45,7 +45,7 @@ Vagrant.configure("2") do |config|
 
   # Mount the current dir at home folder instead of default
   config.vm.synced_folder './', '/vagrant', disabled: true
-  config.vm.synced_folder './', '/home/vagrant/' + File.basename(Dir.getwd), type: 'rsync'
+  config.vm.synced_folder './', '/home/clear/' + File.basename(Dir.getwd), type: 'rsync'
   #Setup proxies for all machines
   (1..$num_instances).each do |i|
     base_ip = base_ip.succ
@@ -75,8 +75,6 @@ Vagrant.configure("2") do |config|
         c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
         c.proxy.no_proxy =  (ENV['no_proxy']+"#{proxy_ip_list}" || ENV['NO_PROXY']+"#{proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{proxy_ip_list}")
       end
-      # Bad hack for the vagrant libvirt boxes. WIll be removed once they are fixed.
-      c.vm.provision "shell", privileged: false, inline: "sudo usermod --password vagrant root"
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
       c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
       # Include shells bundle to get bash completion and add kubectl's commands to vagrant's shell
