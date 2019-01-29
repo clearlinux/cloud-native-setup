@@ -7,9 +7,7 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 featureGates:
   RuntimeClass: true
-# Kata does not work with static
-# https://github.com/kata-containers/runtime/issues/878
-# cpuManagerPolicy: static
+cpuManagerPolicy: static
 systemReserved:
   cpu: 500m
   memory: 256M
