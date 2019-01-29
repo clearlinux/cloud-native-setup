@@ -22,15 +22,15 @@ function cluster_init() {
 	#to enable the RuntimeClass featuregate
 	sudo -E kubeadm init --config=./kubeadm.yaml
 
-	# If this an interactive terminal then wait for user to join workers
-	if [ -t 0 ]; then
-		read -p "Join other nodes. Press enter to continue"
-	fi
-
 	rm -rf $HOME/.kube
 	mkdir -p $HOME/.kube
 	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+	# If this an interactive terminal then wait for user to join workers
+	if [ -t 0 ]; then
+		read -p "Join other nodes. Press enter to continue"
+	fi
 
 	#Ensure single node k8s works
 	if [ $(kubectl get nodes | wc -l) -eq 2 ]; then
