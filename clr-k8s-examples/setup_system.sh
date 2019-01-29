@@ -33,6 +33,10 @@ vhost_vsock
 overlay
 EOT
 
+# Make sure /etc/hosts file exists
+if [ ! -f /etc/hosts ]; then
+  sudo touch /etc/hosts
+fi
 hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
 if [ "$hostcount" == "0" ]; then
 	echo "127.0.0.1 localhost $(hostname)" | sudo bash -c "cat >> /etc/hosts"
