@@ -4,12 +4,14 @@
 require 'fileutils'
 require 'ipaddr'
 require 'securerandom'
-DISK_UUID = SecureRandom.urlsafe_base64(9)
 
 $num_instances = (ENV['NODES'] || 3).to_i
 $cpus = (ENV['CPUS'] || 2).to_i
 $memory = (ENV['MEMORY'] || 4096).to_i
 $disks = 2
+# Using folder prefix instead of uuid until vagrant-libvirt fixes disk cleanup
+disk_prefix = File.basename(File.dirname(__FILE__), "/")
+#DISK_UUID = SecureRandom.urlsafe_base64(9)
 $disk_size = "10G"
 $box = "AntonioMeireles/ClearLinux"
 $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
@@ -67,7 +69,7 @@ Vagrant.configure("2") do |config|
         lv.cpus = $cpus
         lv.memory = $memory
         (1..$disks).each do |d|
-          lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{vm_name}-#{d}-#{DISK_UUID}.disk", :size => $disk_size, :type => "raw"
+          lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
         end
       end
       if Vagrant.has_plugin?("vagrant-proxyconf")
