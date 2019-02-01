@@ -2,8 +2,13 @@
 
 set -o nounset
 
+runtime="crio"
+
+function reset() {
+
+echo "resetting kubernetes and $runtime"	
 #Cleanup
-sudo -E kubeadm reset -f --cri-socket="/var/run/crio/crio.sock"
+sudo -E kubeadm reset -f --cri-socket="/var/run/"$runtime"/"$runtime".sock"
 
 for ctr in $(sudo crictl ps --quiet); do
 	sudo crictl stop "$ctr"
@@ -17,7 +22,7 @@ done
 #Forcefull cleanup all artifacts
 #This is needed is things really go wrong
 sudo systemctl stop kubelet
-sudo systemctl stop crio
+sudo systemctl stop "$runtime"
 sudo pkill -9 qemu
 sudo pkill -9 kata
 sudo pkill -9 kube
@@ -39,8 +44,24 @@ sudo -E bash -c "rm -r /var/run/kata-containers/*"
 sudo rm -rf /var/lib/rook
 
 sudo systemctl daemon-reload
-sudo systemctl enable kubelet crio
-sudo systemctl restart crio
+sudo systemctl enable kubelet "$runtime"
+sudo systemctl restart "$runtime"
 sudo systemctl restart kubelet
 
-sudo -E kubeadm reset -f --cri-socket="/var/run/crio/crio.sock"
+sudo -E kubeadm reset -f --cri-socket="/var/run/"$runtime"/"$runtime".sock"
+
+}
+
+main() {
+
+	while getopts r: opt; do
+		case $opt in
+		r)
+			runtime="$OPTARG"
+			;;
+		esac
+	done
+
+	reset
+}
+main $@

@@ -6,9 +6,10 @@ set -o nounset
 
 CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+runtime="crio"
 
 function print_usage_exit() {
-	echo $"Usage: $0 [minimal|all]"
+	echo $"Usage: $0 -r (CRI runtime: optional) [minimal|all] "
 	exit 1
 }
 
@@ -18,9 +19,10 @@ function finish() {
 trap finish EXIT
 
 function cluster_init() {
+	echo "initializing Kubernetes with $runtime"
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
-	sudo -E kubeadm init --config=./kubeadm.yaml
+	sudo -E kubeadm init --config=./kubeadm-"$runtime".yaml
 
 	rm -rf $HOME/.kube
 	mkdir -p $HOME/.kube
@@ -100,9 +102,9 @@ function miscellaneous() {
 
 function minimal() {
 	cluster_init
-	runtimeclass_kata
+#	runtimeclass_kata
 	cni
-	metrics
+#	metrics
 }
 
 function all() {
@@ -112,20 +114,37 @@ function all() {
 	miscellaneous
 }
 
-cd $SCRIPT_DIR
-if [[ "$#" -eq 0 ]]; then
-	all
-	exit
-fi
+main() {
+	action=""
 
-case "$1" in
-minimal)
-	minimal
-	;;
-all)
-	all
-	;;
-*)
-	print_usage_exit
-	;;
-esac
+	cd $SCRIPT_DIR
+
+
+	while getopts r: opt; do
+		case $opt in
+		r)
+			runtime="$OPTARG"
+			;;
+		esac
+	done
+
+	shift $(($OPTIND - 1))
+
+	if [[ "$#" -eq 0 ]]; then
+		all
+		exit
+	fi
+	case "$1" in
+	minimal)
+		minimal
+		;;
+	all)
+		all
+		;;
+	*)
+		print_usage_exit
+		;;
+	esac
+}
+
+main $@
