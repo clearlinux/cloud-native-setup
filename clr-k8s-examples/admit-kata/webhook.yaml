@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: pod-annotate-webhook
-          image: mcastelino/kubewebhook-pod-annotate-example:1.0
+          image: katadocker/kata-webhook-example:latest
           imagePullPolicy: Always
           args:
             - -tls-cert-file=/etc/webhook/certs/cert.pem
