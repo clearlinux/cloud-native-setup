@@ -33,27 +33,6 @@ EOT
 sudo systemctl daemon-reload
 sudo systemctl enable --now devicemapper
 
-# For now till we address https://github.com/kubernetes-sigs/cri-o/issues/1991
-# use a shell script to expose firecracker through kata
-cat <<EOT | sudo tee /usr/bin/kata-fc
-#!/bin/bash
-
-/usr/bin/kata-runtime --kata-config /usr/share/defaults/kata-containers/configuration-fc.toml "\$@"
-EOT
-
-sudo chmod +x /usr/bin/kata-fc
-
-# Add firecracker as a second runtime
-# Also setup crio to use devicemapper
-
-sudo mkdir -p /etc/crio/
-if [ ! -f /etc/crio/crio.conf ]; then
-  sudo cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
-fi
-
-echo -e "\n[crio.runtime.runtimes.kata-qemu]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
-echo -e "\n[crio.runtime.runtimes.kata-fc]\nruntime_path = \"/usr/bin/kata-fc\"" | sudo tee -a /etc/crio/crio.conf
-
 sudo sed -i 's/storage_driver = \"overlay\"/storage_driver = \"devicemapper\"\
 storage_option = [\
   \"dm.basesize=8G\",\
