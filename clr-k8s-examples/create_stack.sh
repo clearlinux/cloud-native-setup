@@ -38,7 +38,11 @@ function cluster_init() {
 	fi
 }
 
-function runtimeclass_kata() {
+function kata() {
+	# Install kata artifacts using kata-deploy
+	kubectl apply -f 8-kata/deploy/kata-rbac.yaml
+	kubectl apply -f 8-kata/deploy/kata-deploy.yaml
+
 	#Add support for kata runtime
 	kubectl apply -f 8-kata/runtimeclass_crd.yaml
 	while [[ $(kubectl get crd runtimeclasses.node.k8s.io >/dev/null 2>&1) || $? -ne 0 ]]; do
@@ -100,8 +104,8 @@ function miscellaneous() {
 
 function minimal() {
 	cluster_init
-	runtimeclass_kata
 	cni
+	kata
 	metrics
 }
 
