@@ -1,0 +1,54 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: php-apache-test
+  name: php-apache-test
+spec:
+  selector:
+    matchLabels:
+      run: php-apache-test
+  template:
+    metadata:
+      labels:
+        run: php-apache-test
+    spec:
+      containers:
+      - image: k8s.gcr.io/hpa-example
+        name: php-apache-test
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 200m
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache-test
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: php-apache-test
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache-test
+spec:
+  maxReplicas: 10
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache-test
+  targetCPUUtilizationPercentage: 50
+
