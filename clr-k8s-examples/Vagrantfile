@@ -5,6 +5,10 @@ require 'fileutils'
 require 'ipaddr'
 require 'securerandom'
 
+SUPPORTED_OS = {
+  "clearlinux" => {box: "AntonioMeireles/ClearLinux", vm_prefix: "clr", home_dir: "clear"},
+  "ubuntu" => {box: "generic/ubuntu1804", vm_prefix: "ubuntu", home_dir: "vagrant"},
+}
 $num_instances = (ENV['NODES'] || 3).to_i
 $cpus = (ENV['CPUS'] || 2).to_i
 $memory = (ENV['MEMORY'] || 4096).to_i
@@ -13,22 +17,27 @@ $disks = 2
 disk_prefix = File.basename(File.dirname(__FILE__), "/")
 #DISK_UUID = SecureRandom.urlsafe_base64(9)
 $disk_size = "10G"
-$box = "AntonioMeireles/ClearLinux"
-$loader = File.join(File.dirname(__FILE__), "OVMF.fd")
-$vm_name_prefix = "clr"
+$os = (ENV['OS'] || "clearlinux")
 base_ip = IPAddr.new("192.52.100.10")
 hosts = {}
 proxy_ip_list = ""
 #DISK_UUID = Time.now.utc.to_i
 driveletters = ('a'..'z').to_a
 
-if not File.exists?($loader)
-  system('curl -O https://download.clearlinux.org/image/OVMF.fd')
-end
+$box = SUPPORTED_OS[$os][:box]
+$vm_name_prefix = SUPPORTED_OS[$os][:vm_prefix]
+$home_dir = SUPPORTED_OS[$os][:home_dir]
 
-# We need v 1.0.14 or above for this vagrantfile to work.
-unless Vagrant.has_plugin?("vagrant-guests-clearlinux")
-  system "vagrant plugin install vagrant-guests-clearlinux"
+# Install Clearlinux specific stuff
+if $os == "clearlinux"
+  $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
+  if not File.exists?($loader)
+    system('curl -O https://download.clearlinux.org/image/OVMF.fd')
+  end
+
+  unless Vagrant.has_plugin?("vagrant-guests-clearlinux")
+    system "vagrant plugin install vagrant-guests-clearlinux"
+  end
 end
 
 # Install plugins that you might need.
@@ -47,11 +56,11 @@ Vagrant.configure("2") do |config|
 
   # Mount the current dir at home folder instead of default
   config.vm.synced_folder './', '/vagrant', disabled: true
-  config.vm.synced_folder './', '/home/clear/' + File.basename(Dir.getwd), type: 'rsync'
+  config.vm.synced_folder './', '/home/' + $home_dir + '/' + File.basename(Dir.getwd), type: 'rsync'
   #Setup proxies for all machines
   (1..$num_instances).each do |i|
     base_ip = base_ip.succ
-    hosts["clr-%02d" % i] = base_ip.to_s
+    hosts["%s-%02d" % [$vm_name_prefix, i]] = base_ip.to_s
   end
 
   hosts.each do |vm_name, ip|
@@ -63,8 +72,10 @@ Vagrant.configure("2") do |config|
       c.vm.hostname = vm_name
       c.vm.network :private_network, ip: ip, autostart: true
       c.vm.provider :libvirt do |lv|
-        lv.loader = $loader
-        lv.cpu_mode = "host-passthrough"
+        if $os == "clearlinux"
+          lv.loader = $loader
+          lv.cpu_mode = "host-passthrough"
+        end
         lv.nested = true
         lv.cpus = $cpus
         lv.memory = $memory
@@ -79,8 +90,6 @@ Vagrant.configure("2") do |config|
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
       c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
-      # Include shells bundle to get bash completion and add kubectl's commands to vagrant's shell
-      c.vm.provision "shell", privileged: false, inline: 'sudo -E swupd bundle-add shells; echo "source <(kubectl completion bash)" >> $HOME/.bashrc'
     end
   end
 end
