@@ -86,6 +86,7 @@ storage_option = [\
   \"dm.basesize=8G\",\
   \"dm.directlvm_device=\/dev\/loop8\",\
   \"dm.directlvm_device_force=true\",\
+  \"dm.override_udev_sync_check=true",\
   \"dm.fs=ext4\"\
 ]/g' /etc/crio/crio.conf
 
