@@ -22,10 +22,6 @@ proxy_ip_list = ""
 #DISK_UUID = Time.now.utc.to_i
 driveletters = ('a'..'z').to_a
 
-if not File.exists?($loader)
-  system('curl -O https://download.clearlinux.org/image/OVMF.fd')
-end
-
 # We need v 1.0.14 or above for this vagrantfile to work.
 unless Vagrant.has_plugin?("vagrant-guests-clearlinux")
   system "vagrant plugin install vagrant-guests-clearlinux"
@@ -63,7 +59,6 @@ Vagrant.configure("2") do |config|
       c.vm.hostname = vm_name
       c.vm.network :private_network, ip: ip, autostart: true
       c.vm.provider :libvirt do |lv|
-        lv.loader = $loader
         lv.cpu_mode = "host-passthrough"
         lv.nested = true
         lv.cpus = $cpus
