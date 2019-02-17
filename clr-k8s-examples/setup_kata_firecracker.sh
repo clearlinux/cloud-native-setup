@@ -74,7 +74,9 @@ sudo chmod +x /usr/bin/kata-fc
 # Also setup crio to use devicemapper
 
 sudo mkdir -p /etc/crio/
-sudo cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
+if [ ! -f /etc/crio/crio.conf ]; then
+  sudo cp /usr/share/defaults/crio/crio.conf /etc/crio/crio.conf
+fi
 
 echo -e "\n[crio.runtime.runtimes.kata-qemu]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
 echo -e "\n[crio.runtime.runtimes.kata-fc]\nruntime_path = \"/usr/bin/kata-fc\"" | sudo tee -a /etc/crio/crio.conf
