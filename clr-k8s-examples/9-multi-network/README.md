@@ -15,6 +15,17 @@ file is provided, which enables SR-IOV for the above `rootDevices`
 
 > NOTE: This assumes homogenous nodes in the cluster
 
+### Pre-req (SR-IOV only)
+
+One each SR-IOV node setup systemd to bring up VFs on designated interfaces bound to network driver or `vfio-pci`
+
+```bash
+sudo cp systemd/sriov.sh /usr/bin/sriov.sh
+sudo cp systemd/sriov.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now sriov.service
+```
+
 ### Install
 
 To install and configure `multus-cni` on all nodes, along with
