@@ -4,33 +4,6 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-sudo mkdir -p /etc/kata-containers
-
-# Setup a configuration to be used by firecracker
-cat <<EOT | sudo tee /etc/kata-containers/configuration_firecracker.toml
-[hypervisor.firecracker]
-path = "/usr/bin/firecracker"
-kernel = "/usr//share/kata-containers/vmlinux.container"
-image = "/usr//share/kata-containers/kata-containers.img"
-kernel_params = ""
-default_vcpus = 1
-default_memory = 4096
-default_maxvcpus = 0
-default_bridges = 1
-block_device_driver = "virtio-mmio"
-disable_block_device_use = false
-enable_debug = true
-use_vsock = true
-
-[shim.kata]
-path = "/usr//libexec/kata-containers/kata-shim"
-
-[agent.kata]
-
-[runtime]
-internetworking_model="tcfilter"
-EOT
-
 # Firecracker can only work with devicemapper
 # Setup a sparse disk to be used for devicemapper
 sudo rm -f /var/lib/crio/devicemapper/disk.img
@@ -65,7 +38,7 @@ sudo systemctl enable --now devicemapper
 cat <<EOT | sudo tee /usr/bin/kata-fc
 #!/bin/bash
 
-/usr/bin/kata-runtime --kata-config /etc/kata-containers/configuration_firecracker.toml "\$@"
+/usr/bin/kata-runtime --kata-config /usr/share/defaults/kata-containers/configuration-fc.toml "\$@"
 EOT
 
 sudo chmod +x /usr/bin/kata-fc
@@ -80,8 +53,6 @@ fi
 
 echo -e "\n[crio.runtime.runtimes.kata-qemu]\nruntime_path = \"/usr/bin/kata-runtime\"" | sudo tee -a /etc/crio/crio.conf
 echo -e "\n[crio.runtime.runtimes.kata-fc]\nruntime_path = \"/usr/bin/kata-fc\"" | sudo tee -a /etc/crio/crio.conf
-
-sudo sed -i 's|\(\[crio\.runtime\]\)|\1\nmanage_network_ns_lifecycle = true|' /etc/crio/crio.conf
 
 sudo sed -i 's/storage_driver = \"overlay\"/storage_driver = \"devicemapper\"\
 storage_option = [\
