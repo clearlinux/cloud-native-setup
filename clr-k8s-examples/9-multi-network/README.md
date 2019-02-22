@@ -17,9 +17,14 @@ file is provided, which enables SR-IOV for the above `rootDevices`
 
 ### Pre-req (SR-IOV only)
 
-One each SR-IOV node setup systemd to bring up VFs on designated interfaces bound to network driver or `vfio-pci`
+One each SR-IOV node make sure `VT-d` is enabled in the BIOS.
+Setup systemd to bring up VFs on designated interfaces bound to network driver or `vfio-pci`
 
 ```bash
+# Make sure vfio-pci is loaded on boot
+echo 'vfio-pci' | sudo tee /etc/modules-load.d/sriov.conf
+sudo systemctl restart systemd-modules-load.service
+
 sudo cp systemd/sriov.sh /usr/bin/sriov.sh
 sudo cp systemd/sriov.service /etc/systemd/system/
 sudo systemctl daemon-reload
