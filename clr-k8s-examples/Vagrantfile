@@ -43,7 +43,8 @@ Vagrant.configure("2") do |config|
 
   # Mount the current dir at home folder instead of default
   config.vm.synced_folder './', '/vagrant', disabled: true
-  config.vm.synced_folder './', '/home/clear/' + File.basename(Dir.getwd), type: 'rsync'
+  config.vm.synced_folder './', '/home/clear/' + File.basename(Dir.getwd), type: 'rsync',
+    rsync__args: ["--verbose", "--archive", "--delete", "-zz", "--copy-links"]
   #Setup proxies for all machines
   (1..$num_instances).each do |i|
     base_ip = base_ip.succ
