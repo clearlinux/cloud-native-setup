@@ -17,7 +17,7 @@ file is provided, which enables SR-IOV for the above `rootDevices`
 
 ### Pre-req (SR-IOV only)
 
-One each SR-IOV node make sure `VT-d` is enabled in the BIOS.
+One each SR-IOV node make sure `VT-d` is enabled in the BIOS and `intel_iommu=on` on kernel commandline.
 Setup systemd to bring up VFs on designated interfaces bound to network driver or `vfio-pci`
 
 ```bash
