@@ -68,10 +68,12 @@ Vagrant.configure("2") do |config|
           lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
         end
       end
-      if Vagrant.has_plugin?("vagrant-proxyconf")
-        c.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
-        c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
-        c.proxy.no_proxy =  (ENV['no_proxy']+"#{proxy_ip_list}" || ENV['NO_PROXY']+"#{proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{proxy_ip_list}")
+      if ENV['http_proxy'] || ENV['HTTP_PROXY']
+        if Vagrant.has_plugin?("vagrant-proxyconf")
+          c.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
+          c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
+          c.proxy.no_proxy =  (ENV['no_proxy']+"#{proxy_ip_list}" || ENV['NO_PROXY']+"#{proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{proxy_ip_list}")
+        end
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
       c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
