@@ -102,30 +102,11 @@ and sample admission controller we created by running -
 `kubectl apply -f admit-kata/`
 
 The [admission webhook](admit-kata/webhook-registration.yaml)
-is setup to exclude certian namespaces from being run with Kata using filters on namespace labels.
 
-```yaml
-    namespaceSelector:
-      matchExpressions:
-        -  {key: "kata", operator: NotIn, values: ["false"]}
-```
+The webhook mutates pods to use the kata runtime class for all pods except those with
 
-The rook operators for example are marked as such
-
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: rook-ceph-system
-  labels:
-    kata: "false"
-```
-
-Pods not explicitly excluded by the namespace filter are dynamically tagged to
-run with Kata with some [exceptions](https://github.com/mcastelino/kubewebhook/blob/topic/hack-kata/examples/pod-annotate/main.go#L25) -
-
-* `hostNetwork: true`
-* `rook-ceph` and `rook-ceph-system` namespaces (buggy)
+- hostNetwork: true
+- namespace: rook-ceph and rook-ceph-system
 
 Other pod properties will be added as exceptions in future.
 
