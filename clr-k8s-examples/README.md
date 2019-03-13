@@ -24,6 +24,7 @@ to ensure k8s works on it.
 This script ensures the following
 
 * Installs the bundles the Clearlinux needs to support Kubernetes, CRIO and Kata
+* Setup `/etc/containers/registries.conf` to use docker.io & quay.io
 * Customizes the system to ensure correct defaults are setup (IP Forwarding, Swap off,...)
 * Ensures all the dependencies are loaded on boot (kernel modules)
 

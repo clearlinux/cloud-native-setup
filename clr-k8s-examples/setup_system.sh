@@ -10,6 +10,15 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 sudo -E swupd update
 sudo -E swupd bundle-add cloud-native-basic storage-utils
 
+# Add registries for k8s onto crio's registries.conf
+if [ ! -f /etc/containers/registries.conf ]; then
+  sudo mkdir -p /etc/containers
+  cat << EOT | sudo tee /etc/containers/registries.conf
+[registries.search]
+registries = ['docker.io', 'quay.io']
+EOT
+fi
+
 #Permanently disable swap
 swapcount=$(sudo grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
 
@@ -20,14 +29,14 @@ else
 fi
 
 sudo mkdir -p /etc/sysctl.d/
-cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
+cat << EOT | sudo tee /etc/sysctl.d/60-k8s.conf
 net.ipv4.ip_forward=1
 EOT
 sudo systemctl restart systemd-sysctl
 
 #Ensure the modules we need are preloaded
 sudo mkdir -p /etc/modules-load.d/
-cat <<EOT | sudo bash -c "cat > /etc/modules-load.d/k8s.conf"
+cat << EOT | sudo tee /etc/modules-load.d/k8s.conf
 br_netfilter
 vhost_vsock
 overlay
@@ -39,7 +48,7 @@ if [ ! -f /etc/hosts ]; then
 fi
 hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
 if [ "$hostcount" == "0" ]; then
-	echo "127.0.0.1 localhost $(hostname)" | sudo bash -c "cat >> /etc/hosts"
+	echo "127.0.0.1 localhost $(hostname)" | sudo tee -a /etc/hosts
 else
 	echo "/etc/hosts already configured"
 fi
@@ -71,7 +80,7 @@ if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
 	services=('crio' 'kubelet')
 	for s in "${services[@]}"; do
 		sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-		cat <<EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
+		cat <<EOF | sudo tee /etc/systemd/system/${s}.service.d/proxy.conf
 [Service]
 Environment="HTTP_PROXY=${http_proxy}"
 Environment="HTTPS_PROXY=${https_proxy}"
