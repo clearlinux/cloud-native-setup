@@ -140,10 +140,8 @@ spec:
         - cp /tmp/cni/bin/{multus,sriov,vfioveth,jq} /host/opt/cni/bin/;
           /tmp/multus/install-multus-conf.sh;
           /tmp/multus/install-certs.sh;
-          systemctl stop kubelet;
-          echo "Restarting crio/containerd, kubelet";
-          systemctl restart containerd;
-          systemctl restart crio;
+          echo "Restarting crio kubelet";
+          systemctl restart crio; # Needed when crio manages ns lifecycle
           systemctl restart kubelet;
         volumeMounts:
         - name: usr-bin
