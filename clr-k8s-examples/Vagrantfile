@@ -10,17 +10,16 @@ $cpus = (ENV['CPUS'] || 2).to_i
 $memory = (ENV['MEMORY'] || 4096).to_i
 $disks = 2
 # Using folder prefix instead of uuid until vagrant-libvirt fixes disk cleanup
-disk_prefix = File.basename(File.dirname(__FILE__), "/")
-#DISK_UUID = SecureRandom.urlsafe_base64(9)
+$disk_prefix = File.basename(File.dirname(__FILE__), "/")
 $disk_size = "10G"
 $box = "AntonioMeireles/ClearLinux"
 $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
 $vm_name_prefix = "clr"
-base_ip = IPAddr.new("192.52.100.10")
-hosts = {}
-proxy_ip_list = ""
-#DISK_UUID = Time.now.utc.to_i
-driveletters = ('a'..'z').to_a
+$base_ip = IPAddr.new("192.52.100.10")
+$hosts = {}
+$proxy_ip_list = ""
+$driveletters = ('a'..'z').to_a
+$setup_fc = true ? (['true', '1'].include? ENV['SETUP_FC'].to_s) : false
 
 # We need v 1.0.14 or above for this vagrantfile to work.
 unless Vagrant.has_plugin?("vagrant-guests-clearlinux")
@@ -47,15 +46,15 @@ Vagrant.configure("2") do |config|
     rsync__args: ["--verbose", "--archive", "--delete", "-zz", "--copy-links"]
   #Setup proxies for all machines
   (1..$num_instances).each do |i|
-    base_ip = base_ip.succ
-    hosts["clr-%02d" % i] = base_ip.to_s
+    $base_ip = $base_ip.succ
+    $hosts["clr-%02d" % i] = $base_ip.to_s
   end
 
-  hosts.each do |vm_name, ip|
+  $hosts.each do |vm_name, ip|
     proxy_ip_list = ("#{proxy_ip_list},#{vm_name},#{ip}")
   end
 
-  hosts.each do |vm_name, ip|
+  $hosts.each do |vm_name, ip|
     config.vm.define vm_name do |c|
       c.vm.hostname = vm_name
       c.vm.network :private_network, ip: ip, autostart: true
@@ -65,7 +64,7 @@ Vagrant.configure("2") do |config|
         lv.cpus = $cpus
         lv.memory = $memory
         (1..$disks).each do |d|
-          lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
+          lv.storage :file, :device => "hd#{$driveletters[d]}", :path => "disk-#{$disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
         end
       end
       if ENV['http_proxy'] || ENV['HTTP_PROXY']
@@ -76,7 +75,9 @@ Vagrant.configure("2") do |config|
         end
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
-      c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
+      if $setup_fc
+        c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
+      end
       # Include shells bundle to get bash completion and add kubectl's commands to vagrant's shell
       c.vm.provision "shell", privileged: false, inline: 'sudo -E swupd bundle-add shells; echo "source <(kubectl completion bash)" >> $HOME/.bashrc'
     end
