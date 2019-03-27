@@ -92,24 +92,12 @@ An example is
 
 `kubectl apply -f tests/deploy-svc-ing/test-deploy-kata-fc.yaml`
 
-## Making Kata the default runtime
+## Making Kata the default runtime using admission controller
 
-Today in `crio.conf` runc is the default runtime when a user does not specify
-`runtimeClass` in the pod spec. If you want to run a cluster where kata is used
-by default, except for workloads we know for sure will not work with kata, use
-the [admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks)
-and sample admission controller we created by running -
-
-`kubectl apply -f admit-kata/`
-
-The [admission webhook](admit-kata/webhook-registration.yaml)
-
-The webhook mutates pods to use the kata runtime class for all pods except those with
-
-- hostNetwork: true
-- namespace: rook-ceph and rook-ceph-system
-
-Other pod properties will be added as exceptions in future.
+If you want to run a cluster where kata is used
+by default, except for workloads we know for sure will not work with kata, using
+[admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#admission-webhooks)
+and sample admission controller, follow `admit-kata` [README.md](admit-kata/README.md)
 
 ## Accessing control plane services
 
