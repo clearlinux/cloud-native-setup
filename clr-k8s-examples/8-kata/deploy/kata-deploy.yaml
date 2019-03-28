@@ -21,8 +21,8 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["/bin/bash", "-c", "/opt/kata-artifacts/scripts/kata-deploy.sh cleanup"]
-        command: ["/bin/bash", "-c", "/opt/kata-artifacts/scripts/kata-deploy.sh install"]
+              command: ["bash", "-c", "/opt/kata-artifacts/scripts/kata-deploy.sh cleanup"]
+        command: [ "bash", "-c", "/opt/kata-artifacts/scripts/kata-deploy.sh install" ]
         env:
         - name: NODE_NAME
           valueFrom:
@@ -41,6 +41,8 @@ spec:
           mountPath: /var/run/dbus
         - name: systemd
           mountPath: /run/systemd
+        - name: local-bin
+          mountPath: /usr/local/bin/
       volumes:
         - name: crio-conf
           hostPath:
@@ -58,6 +60,9 @@ spec:
         - name: systemd
           hostPath:
             path: /run/systemd
+        - name: local-bin
+          hostPath:
+            path: /usr/local/bin/
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1
