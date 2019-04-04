@@ -1,5 +1,8 @@
 # How to setup the cluster
 
+## Prerequisite
+This setup currently will work with k8s 1.14 & above. Any version of k8s before that might work, but is not guaranteed.
+
 ## Sample multi-node vagrant setup
 
 To be able to test this tool, you can create a 3-node vagrant setup. In this tutorial, we will talk about using [libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), but you can use any hypervisor that you are familiar with.
