@@ -42,13 +42,6 @@ function kata() {
 	# Install kata artifacts using kata-deploy
 	kubectl apply -f 8-kata/deploy/kata-rbac.yaml
 	kubectl apply -f 8-kata/deploy/kata-deploy.yaml
-
-	#Add support for kata runtime
-	kubectl apply -f 8-kata/runtimeclass_crd.yaml
-	while [[ $(kubectl get crd runtimeclasses.node.k8s.io >/dev/null 2>&1) || $? -ne 0 ]]; do
-		echo "Waiting for runtime class CRD"
-		sleep 2
-	done
 	kubectl apply -f 8-kata/
 }
 
