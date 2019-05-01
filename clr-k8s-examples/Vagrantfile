@@ -13,13 +13,17 @@ $disks = 2
 $disk_prefix = File.basename(File.dirname(__FILE__), "/")
 $disk_size = "10G"
 $box = "AntonioMeireles/ClearLinux"
-$loader = File.join(File.dirname(__FILE__), "OVMF.fd")
+File.exists?("/usr/share/qemu/OVMF.fd") ? $loader = "/usr/share/qemu/OVMF.fd" : $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
 $vm_name_prefix = "clr"
 $base_ip = IPAddr.new("192.52.100.10")
 $hosts = {}
 $proxy_ip_list = ""
 $driveletters = ('a'..'z').to_a
 $setup_fc = true ? (['true', '1'].include? ENV['SETUP_FC'].to_s) : false
+
+if not File.exists?($loader)
+  system('curl -O https://download.clearlinux.org/image/OVMF.fd')
+end
 
 # We need v 1.0.14 or above for this vagrantfile to work.
 unless Vagrant.has_plugin?("vagrant-guests-clearlinux")
@@ -61,6 +65,7 @@ Vagrant.configure("2") do |config|
       c.vm.provider :libvirt do |lv|
         lv.cpu_mode = "host-passthrough"
         lv.nested = true
+        lv.loader = $loader
         lv.cpus = $cpus
         lv.memory = $memory
         (1..$disks).each do |d|
