@@ -22,6 +22,7 @@ fi
 sudo mkdir -p /etc/sysctl.d/
 cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
 net.ipv4.ip_forward=1
+net.ipv4.conf.default.rp_filter=1
 EOT
 sudo systemctl restart systemd-sysctl
 
