@@ -8,8 +8,19 @@ CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 function print_usage_exit() {
-	echo $"Usage: $0 [minimal|all]"
-	exit 1
+	exit_code=${1:-0}
+	cat <<EOT
+Usage: $0 [subcommand]
+
+Subcommands:
+
+$(
+		for cmd in "${!command_handlers[@]}"; do
+			printf "\t%s:|\t%s\n" "${cmd}" "${command_help[${cmd}]:-Not-documented}"
+		done | sort | column -t -s "|"
+	)
+EOT
+	exit "${exit_code}"
 }
 
 function finish() {
@@ -109,20 +120,26 @@ function all() {
 	miscellaneous
 }
 
+declare -A command_handlers
+command_handlers[init]=cluster_init
+command_handlers[cni]=cni
+command_handlers[minimal]=minimal
+command_handlers[all]=all
+command_handlers[help]=print_usage_exit
+
+declare -A command_help
+command_help[init]="Only inits a cluster using kubeadm"
+command_help[cni]="Setup network for running cluster"
+command_help[minimal]="init + cni +  kata + metrics"
+command_help[all]="minimal + storage + monitoring + miscellaneous"
+command_help[help]="show this message"
+
 cd $SCRIPT_DIR
-if [[ "$#" -eq 0 ]]; then
-	all
-	exit
+
+cmd_handler=${command_handlers[${1:-none}]:-unimplemented}
+if [ "${cmd_handler}" != "unimplemented" ]; then
+	"${cmd_handler}"
+else
+	print_usage_exit 1
 fi
 
-case "$1" in
-minimal)
-	minimal
-	;;
-all)
-	all
-	;;
-*)
-	print_usage_exit
-	;;
-esac
