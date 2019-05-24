@@ -3,7 +3,10 @@
 set -o nounset
 
 #Cleanup
-sudo -E kubeadm reset -f --cri-socket="/var/run/crio/crio.sock"
+reset_cluster() {
+	sudo -E kubeadm reset -f
+}
+reset_cluster
 
 for ctr in $(sudo crictl ps --quiet); do
 	sudo crictl stop "$ctr"
@@ -43,4 +46,4 @@ sudo systemctl enable kubelet crio
 sudo systemctl restart crio
 sudo systemctl restart kubelet
 
-sudo -E kubeadm reset -f --cri-socket="/var/run/crio/crio.sock"
+reset_cluster
