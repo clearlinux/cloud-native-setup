@@ -24,7 +24,7 @@ EOT
 }
 
 function finish() {
-	cd $CUR_DIR
+	cd "${CUR_DIR}"
 }
 trap finish EXIT
 
@@ -33,10 +33,10 @@ function cluster_init() {
 	#to enable the RuntimeClass featuregate
 	sudo -E kubeadm init --config=./kubeadm.yaml
 
-	rm -rf $HOME/.kube
-	mkdir -p $HOME/.kube
-	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+	rm -rf "${HOME}/.kube"
+	mkdir -p "${HOME}/.kube"
+	sudo cp -i /etc/kubernetes/admin.conf "${HOME}/.kube/config"
+	sudo chown "$(id -u):$(id -g)" "${HOME}/.kube/config"
 
 	# If this an interactive terminal then wait for user to join workers
 	if [ -t 0 ]; then
@@ -44,7 +44,7 @@ function cluster_init() {
 	fi
 
 	#Ensure single node k8s works
-	if [ $(kubectl get nodes | wc -l) -eq 2 ]; then
+	if [ "$(kubectl get nodes | wc -l)" -eq 2 ]; then
 		kubectl taint nodes --all node-role.kubernetes.io/master-
 	fi
 }
@@ -134,7 +134,7 @@ command_help[minimal]="init + cni +  kata + metrics"
 command_help[all]="minimal + storage + monitoring + miscellaneous"
 command_help[help]="show this message"
 
-cd $SCRIPT_DIR
+cd "${SCRIPT_DIR}"
 
 cmd_handler=${command_handlers[${1:-none}]:-unimplemented}
 if [ "${cmd_handler}" != "unimplemented" ]; then
@@ -142,4 +142,3 @@ if [ "${cmd_handler}" != "unimplemented" ]; then
 else
 	print_usage_exit 1
 fi
-
