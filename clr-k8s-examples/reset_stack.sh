@@ -18,9 +18,10 @@ for pod in $(sudo crictl pods --quiet); do
 done
 
 #Forcefull cleanup all artifacts
-#This is needed is things really go wrong
+#This is needed if things really go wrong
 sudo systemctl stop kubelet
-sudo systemctl stop crio
+systemctl is-active crio && sudo systemctl stop crio
+systemctl is-active containerd && sudo systemctl stop containerd
 sudo pkill -9 qemu
 sudo pkill -9 kata
 sudo pkill -9 kube
@@ -42,8 +43,11 @@ sudo -E bash -c "rm -r /var/run/kata-containers/*"
 sudo rm -rf /var/lib/rook
 
 sudo systemctl daemon-reload
-sudo systemctl enable kubelet crio
-sudo systemctl restart crio
+sudo systemctl is-active crio && sudo systemctl stop crio
+sudo systemctl is-active containerd && sudo systemctl stop containerd
+sudo systemctl is-enabled crio && sudo systemctl restart crio
+sudo systemctl is-enabled containerd && sudo systemctl restart containerd
+
 sudo systemctl restart kubelet
 
 reset_cluster
