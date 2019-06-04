@@ -52,8 +52,6 @@ sudo systemctl daemon-reload
 echo "The following kubelet command may complain... it is not an error"
 sudo systemctl enable --now kubelet crio || true
 
-sudo mkdir -p /usr/libexec/cni /opt/cni
-[ ! -e /opt/cni/bin/cni ] && sudo ln -s /usr/libexec/cni /opt/cni/bin
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
 sudo systemctl restart systemd-modules-load.service
