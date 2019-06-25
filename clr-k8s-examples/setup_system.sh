@@ -7,7 +7,7 @@ ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 #Install kubernetes and crio
-sudo -E swupd update
+sudo -E swupd repair --picky -m 29880 --force
 sudo -E swupd bundle-add cloud-native-basic storage-utils
 
 #Permanently disable swap
