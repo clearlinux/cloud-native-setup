@@ -8,6 +8,9 @@
 # For other examples of values, see
 #     https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/e2e-tests.md#kinds-of-tests
 
+set -o errexit
+set -o pipefail
+
 if [ ! -z $1 ]
 then
     FOCUS=$1
@@ -16,26 +19,47 @@ else
     echo Running all e2e tests, this will take a long time
 fi
 
-sudo swupd bundle-add go-basic
+GO_INSTALLED=$(sudo swupd bundle-list | grep go-basic)
+if [ -z $GO_INSTALLED ]
+then
+    echo Installing go-basic bundle
+    sudo swupd bundle-add go-basic
+else
+    echo Skipping go-basic bundle installation
+fi
 
-go get -d k8s.io/kubernetes
+if [ -z $GOPATH ] ; then GOPATH=$HOME/go; fi
+if [ -z $GOBIN ] ; then GOBIN=$HOME/go/bin; fi
+
+echo Getting kubetest
 go get -u k8s.io/test-infra/kubetest
 
-set -o errexit
-set -o pipefail
-set -o nounset
+cd $GOPATH/src/k8s.io
 
-cd /home/clear/go/src/k8s.io/kubernetes
+if [ -d kubernetes ]
+then
+    cd kubernetes
+    echo Checking status of existing k8s repo clone
+    git status kubernetes
+else
+    echo Cloning upstream k8s repo
+    git clone https://github.com/kubernetes/kubernetes.git
+    cd kubernetes
+fi
 
-PATH=$PATH:/home/clear/go/bin
+PATH=$PATH:$GOBIN
 
 API_SERVER=$(kubectl config view -o jsonpath="{.clusters[?(@.name==\"kubernetes\")].cluster.server}")
-API_SERVER_VERSION=$(kubectl version --short | grep -E 'Server' | sed 's/Server Version: //')
+CLIENT_VERSION=$(kubectl version --short | grep -E 'Client' | sed 's/Client Version: //')
+
+echo Running kubetest
 
 if [ -z $FOCUS ]
 then
-    sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER" --extract=$API_SERVER_VERSION --provider=local
+    echo sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER" --extract=$CLIENT_VERSION --provider=local 
+    sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER" --extract=$CLIENT_VERSION --provider=local
 else
-    sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER --ginkgo.focus=\[$FOCUS\]" --extract=$API_SERVER_VERSION --provider=local
+    echo sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER --ginkgo.focus=\[$FOCUS\]" --extract=$CLIENT_VERSION --provider=local
+    sudo -E kubetest --test --test_args="--kubeconfig=${HOME}/.kube/config --host=$API_SERVER --ginkgo.focus=\[$FOCUS\]" --extract=$CLIENT_VERSION --provider=local
 fi
 
