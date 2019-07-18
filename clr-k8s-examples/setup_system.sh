@@ -5,6 +5,7 @@ set -o nounset
 
 ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
+: ${RUNNER:="containerd"}
 
 #Install kubernetes and crio
 sudo -E swupd repair --picky -m 30270 --force
@@ -48,7 +49,7 @@ sudo systemctl daemon-reload
 # This will fail at this point, but puts it into a retry loop that
 # will therefore startup later once we have configured with kubeadm.
 echo "The following kubelet command may complain... it is not an error"
-sudo systemctl enable --now kubelet crio || true
+sudo systemctl enable --now kubelet $RUNNER || true
 
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
@@ -66,7 +67,7 @@ if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
 		echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
 	fi
 
-	services=('crio' 'kubelet')
+	services=($RUNNER 'kubelet')
 	for s in "${services[@]}"; do
 		sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
 		cat <<EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
@@ -82,5 +83,5 @@ set -o nounset
 
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
-sudo systemctl restart crio || true
+sudo systemctl restart $RUNNER || true
 sudo systemctl restart kubelet || true
