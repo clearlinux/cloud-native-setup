@@ -1,0 +1,13 @@
+resources:
+  - ingress-nginx/deploy/static/mandatory.yaml
+  - ingress-nginx/deploy/static/provider/baremetal/service-nodeport.yaml
+
+patchesJson6902:
+  # adds "networking.k8s.io" to ClusterRole's apiGroups
+  - target:
+      group: rbac.authorization.k8s.io
+      version: v1beta1
+      kind: ClusterRole
+      name: nginx-ingress-clusterrole
+    path: patch_clusterrole.yaml
+

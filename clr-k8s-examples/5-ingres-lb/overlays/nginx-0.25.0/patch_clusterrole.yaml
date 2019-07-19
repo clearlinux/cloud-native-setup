@@ -1,0 +1,5 @@
+# adds "networking.k8s.io" to apiGroups for ingress rules which is missing in 0.25.0
+- op: add
+  path: /rules/3/apiGroups/-
+  value: "networking.k8s.io"
+

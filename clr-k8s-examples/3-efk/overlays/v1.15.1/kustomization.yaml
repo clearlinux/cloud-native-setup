@@ -1,0 +1,18 @@
+resources:
+  - kubernetes/cluster/addons/fluentd-elasticsearch/es-service.yaml
+  - kubernetes/cluster/addons/fluentd-elasticsearch/es-statefulset.yaml
+  - kubernetes/cluster/addons/fluentd-elasticsearch/fluentd-es-configmap.yaml
+  - kubernetes/cluster/addons/fluentd-elasticsearch/fluentd-es-ds.yaml
+  - kubernetes/cluster/addons/fluentd-elasticsearch/kibana-deployment.yaml
+  - kubernetes/cluster/addons/fluentd-elasticsearch/kibana-service.yaml
+
+images:
+  - name: gcr.io/fluentd-elasticsearch/fluentd
+    newName: quay.io/fluentd_elasticsearch/fluentd
+    newTag: v2.6.0
+  - name: gcr.io/fluentd-elasticsearch/elasticsearch
+    newName: quay.io/fluentd_elasticsearch/elasticsearch
+    newTag: v7.1.1
+  - name: docker.elastic.co/kibana/kibana-oss
+    newName: docker.elastic.co/kibana/kibana-oss
+    newTag: 7.1.1

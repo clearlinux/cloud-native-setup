@@ -1,0 +1,13 @@
+# operator
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: rook-ceph-operator
+spec:
+  template:
+    spec:
+      containers:
+        - name: rook-ceph-operator
+          env:
+          - name: FLEXVOLUME_DIR_PATH
+            value: "/var/lib/kubelet/volume-plugins"

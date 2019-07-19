@@ -1,0 +1,6 @@
+resources:
+  - packaging/kata-deploy/kata-deploy.yaml
+  - packaging/kata-deploy/kata-rbac.yaml
+  - packaging/kata-deploy/k8s-1.14/kata-fc-runtimeClass.yaml
+  - packaging/kata-deploy/k8s-1.14/kata-qemu-runtimeClass.yaml
+
