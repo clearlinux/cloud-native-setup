@@ -1,0 +1,3 @@
+resources:
+  - dashboard/src/deploy/recommended/kubernetes-dashboard.yaml
+

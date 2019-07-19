@@ -41,6 +41,7 @@ sudo -E bash -c "rm -r /var/lib/containers/storage/overlay*/*"
 sudo -E bash -c "rm -r /var/lib/cni/networks/*"
 sudo -E bash -c "rm -r /var/run/kata-containers/*"
 sudo rm -rf /var/lib/rook
+sudo -E bash -c "rm -rf /var/lib/etcd"
 
 sudo systemctl daemon-reload
 sudo systemctl is-active crio && sudo systemctl stop crio
