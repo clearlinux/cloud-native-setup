@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+# We use a deployment rather than a pod directly specifically so we can use it to
+# generate more replicas by re-deploying it.
+# The only downside might be, if containers go wrong or die etc., then the deployment
+# is going to try and re-deploy them, and we may not notice or get stuck waiting for
+# them, so we want to be careful in the test code to time out in such cases.
+kind: Deployment
+metadata:
+  labels:
+    run: busybox
+  name: @DEPLOYMENT@
+spec:
+  replicas: @REPLICAS@
+  selector:
+    matchLabels:
+      run: busybox
+  template:
+    metadata:
+      labels:
+        run: busybox
+        @LABEL@: @LABELVALUE@
+    spec:
+      runtimeClassName: @RUNTIMECLASS@
+      containers:
+      - name: bb
+        image: busybox
+        command:
+            - "tail"
+            - "-f"
+            - "/dev/null"
+        stdin: true
+        tty: true
+      restartPolicy: Always

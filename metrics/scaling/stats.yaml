@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stats
+spec:
+  containers:
+    - name: stats
+      image: busybox
+      securityContext:
+        # Run a priv container so we really do measure what is happening on the
+        # host (node) system
+        privileged: true
+      command:
+          - "tail"
+          - "-f"
+          - "/dev/null"
+      stdin: true
+      tty: true
