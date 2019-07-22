@@ -8,6 +8,7 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 : ${RUNNER:="containerd"}
 
 #Install kubernetes and crio
+sudo swupd update
 sudo -E swupd bundle-add cloud-native-basic storage-utils
 
 #Permanently disable swap
