@@ -1,0 +1,40 @@
+---
+# Copyright (c) 2018-2019 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+title: "Kubernetes metrics report"
+author: "Auto generated"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document:
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+#Set these opts to get pdf images which fit into beamer slides better
+opts_chunk$set(dev = 'pdf')
+# Pick up any env set by the invoking script, such as the root dir of the
+# results data tree
+source("/inputdir/Env.R")
+```
+\pagebreak
+
+# Introduction
+This report compares the metrics between multiple sets of data generated from
+the [cloud-native-setup report generation scripts](https://github.com/clearlinux/cloud-native-setup/metrics/report/README.md).
+
+This report was generated using the data from the **`r resultdirs`** results directories.
+
+\pagebreak
+
+# Runtime scaling
+This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s_scale.sh)
+measures the system memory 'free' reduction, CPU idle % and pod boot time as it launches more
+and more idle `busybox` pods on a single node Kubernetes cluster.
+
+> Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.
+
+```{r, echo=FALSE, fig.cap="K8S scaling"}
+source('scaling.R')
+```
