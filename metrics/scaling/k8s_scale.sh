@@ -10,8 +10,8 @@ set -e
 SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_PATH}/../lib/common.bash"
 
-input_yaml="bb.yaml.in"
-generated_yaml="generated.yaml"
+input_yaml="${SCRIPT_PATH}/bb.yaml.in"
+generated_yaml="${SCRIPT_PATH}/generated.yaml"
 deployment="busybox"
 
 stats_pod="stats"
@@ -41,7 +41,7 @@ get_num_nodes() {
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
 grab_stats() {
-	local launch_time=$1
+	local launch_time_ms=$1
 	local n_pods=$2
 	info "And grab some stats"
 	# Tell mpstat to measure over a short period, not only so we get slightly de-noised data, but also
@@ -67,8 +67,8 @@ grab_stats() {
 			"Units" : "%"
 		},
 		"launch_time": {
-			"Result": $launch_time,
-			"Units" : "s"
+			"Result": $launch_time_ms,
+			"Units" : "ms"
 		},
 		"mem_free": {
 			"Result": ${mem_free},
@@ -98,7 +98,7 @@ init() {
 	# kubelet config - from 'kubectl describe node -o json' ?
 
 	# Launch our stats gathering pod
-	kubectl apply -f ${stats_pod}.yaml
+	kubectl apply -f ${SCRIPT_PATH}/${stats_pod}.yaml
 	kubectl wait --for=condition=Ready pod "${stats_pod}"
 
 	# FIXME - we should probably 'warm up' the cluster with the container image(s) we will
@@ -138,36 +138,31 @@ run() {
 		info "Testing replicas ${reqs} of ${NUM_PODS}"
 		# Generate the next yaml file
 
+	local runtime_command
 	if [ "$use_kata_runtime" != "no" ]; then
-		sed -e "s|@REPLICAS@|${reqs}|g" \
-		    -e "s|@RUNTIMECLASS@|${RUNTIME}|g" \
-		    -e "s|@DEPLOYMENT@|${deployment}|g" \
-		    -e "s|@LABEL@|${LABEL}|g" \
-		    -e "s|@LABELVALUE@|${LABELVALUE}|g" \
-		    < ${input_yaml} > ${generated_yaml}
-    else
-        sed -e "s|@REPLICAS@|${reqs}|g" \
-		    -e "/@RUNTIMECLASS@/d" \
-		    -e "s|@DEPLOYMENT@|${deployment}|g" \
-		    -e "s|@LABEL@|${LABEL}|g" \
-		    -e "s|@LABELVALUE@|${LABELVALUE}|g" \
-		    < ${input_yaml} > ${generated_yaml}
-    fi
+			runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
+	else
+			runtime_command="/@RUNTIMECLASS@/d"
+	fi
+
+	sed -e "s|@REPLICAS@|${reqs}|g" \
+		-e $runtime_command \
+		-e "s|@DEPLOYMENT@|${deployment}|g" \
+		-e "s|@LABEL@|${LABEL}|g" \
+		-e "s|@LABELVALUE@|${LABELVALUE}|g" \
+		< ${input_yaml} > ${generated_yaml}
 
 		info "Applying changes"
-		# FIXME - time taken in 'seconds' - we can do better than that, if we
-		# use the date nanosecond stamp, and steal the magic from the density test script.
-        # switch to 'date +%N'
-		local start_time=$(date +%s)
+		local start_time=$(date +%s%N)
 		kubectl apply -f ${generated_yaml}
 
 		#cmd="kubectl get pods | grep busybox | grep Completed"
 		kubectl rollout status --timeout=${wait_time}s deployment/${deployment}
-		local end_time=$(date +%s)
-		local total_seconds=$(( end_time - start_time ))
-		info "Took $total_seconds ($end_time - $start_time)"
+		local end_time=$(date +%s%N)
+		local total_milliseconds=$(( (end_time - start_time) / 1000000 ))
+		info "Took $total_milliseconds ms ($end_time - $start_time)"
 		sleep ${settle_time}
-		grab_stats $total_seconds $reqs
+		grab_stats $total_milliseconds $reqs
 	done
 }
 
@@ -178,7 +173,7 @@ cleanup() {
 	metrics_json_end_array "BootResults"
 
 	kubectl delete pod --wait=true --timeout=${delete_wait_time}s "${stats_pod}" || true
-	local start_time=$(date +%s)
+	local start_time=$(date +%s%N)
 	kubectl delete deployment --wait=true --timeout=${delete_wait_time}s "${deployment}" || true
 	for x in $(seq 1 ${delete_wait_time}); do
 		local npods=$(kubectl get pods -l=${LABEL}=${LABELVALUE} -o=name | wc -l)
@@ -189,17 +184,17 @@ cleanup() {
 		fi
 		sleep 1
 	done
-	local end_time=$(date +%s)
-	local total_seconds=$(( end_time - start_time ))
+	local end_time=$(date +%s%N)
+	local total_milliseconds=$(( (end_time - start_time) / 1000000 ))
 	if [ -z "$alldied" ]; then
 		echo "ERROR: Not all pods died!"
 	fi
-	info "Delete Took $total_seconds ($end_time - $start_time)"
+	info "Delete Took $total_milliseconds ms ($end_time - $start_time)"
 
 	local json="$(cat << EOF
 	"Delete": {
-		"Result": ${total_seconds},
-		"Units" : "s"
+		"Result": ${total_milliseconds},
+		"Units" : "ms"
 	}
 EOF
 )"
@@ -225,8 +220,8 @@ show_vars()
 	echo -e "\t\tSeconds to wait for all pods to be deleted"
 	echo -e "\tsettle_time (${settle_time})"
 	echo -e "\t\tSeconds to wait after pods ready before taking measurements"
-    echo -e "\tuse_kata_runtime (${use_kata_runtime})"
-    echo -e "\t\tspecify yes or no to use kata runtime"
+	echo -e "\tuse_kata_runtime (${use_kata_runtime})"
+	echo -e "\t\tspecify yes or no to use kata runtime"
 }
 
 help()

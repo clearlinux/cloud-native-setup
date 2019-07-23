@@ -9,21 +9,6 @@
 declare -a json_result_array
 declare -a json_array_array
 
-# Generate a timestamp in nanoseconds since 1st Jan 1970
-timestamp_ns() {
-	local t
-	local s
-	local n
-	local ns
-
-	t="$(date +%-s:%-N)"
-	s=$(echo $t | awk -F ':' '{print $1}')
-	n=$(echo $t | awk -F ':' '{print $2}')
-	ns=$(( (s * 1000000000) + n ))
-
-	echo $ns
-}
-
 # Generate a timestamp in milliseconds since 1st Jan 1970
 timestamp_ms() {
 	echo $(($(date +%s%N)/1000000))
@@ -67,7 +52,7 @@ EOF
 
 	local json="$(cat << EOF
 	"date" : {
-		"ns": $(timestamp_ns),
+		"ns": $(date +%s%N),
 		"Date": "$(date -u +"%Y-%m-%dT%T.%3N")"
 	}
 EOF
