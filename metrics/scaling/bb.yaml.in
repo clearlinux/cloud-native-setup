@@ -1,3 +1,7 @@
+# Copyright (c) 2017,2018,2019 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
 apiVersion: apps/v1
 # We use a deployment rather than a pod directly specifically so we can use it to
 # generate more replicas by re-deploying it.

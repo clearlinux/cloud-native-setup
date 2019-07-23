@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2017,2018 Intel Corporation
+# Copyright (c) 2017,2018,2019 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,7 +11,6 @@ RESULT_DIR="${LIB_DIR}/../results"
 source ${LIB_DIR}/kata-common.bash
 source ${LIB_DIR}/json.bash
 source /etc/os-release || source /usr/lib/os-release
-KATA_KSM_THROTTLER="${KATA_KSM_THROTTLER:-no}"
 
 # Set variables to reasonable defaults if unset or empty
 DOCKER_EXE="${DOCKER_EXE:-docker}"
@@ -26,26 +25,6 @@ KSM_SLEEP_FILE="${KSM_BASE}/sleep_millisecs"
 # Scan 1000 pages every 50ms - 20,000 pages/s
 KSM_AGGRESIVE_PAGES=1000
 KSM_AGGRESIVE_SLEEP=50
-
-# If we fail for any reason, exit through here and we should log that to the correct
-# place and return the correct code to halt the run
-die(){
-	msg="$*"
-	echo "ERROR: $msg" >&2
-	exit 1
-}
-
-# Sometimes we just want to warn about something - let's have a standard
-# method for that, so maybe we can make a standard form that can be searched
-# for in the logs/tooling
-warning(){
-	msg="$*"
-	echo "WARNING: $msg" >&2
-}
-
-info() {
-    echo -e "INFO: $*"
-}
 
 # This function checks existence of commands.
 # They can be received standalone or as an array, e.g.
@@ -207,14 +186,6 @@ show_system_state() {
 		echo " --pgrep ${p}--"
 		pgrep -a ${p}
 	done
-
-	# Verify kata-ksm-throttler
-	if [ "$KATA_KSM_THROTTLER" == "yes" ]; then
-		process="kata-ksm-throttler"
-		process_path=$(whereis ${process} | tr -d '[:space:]'| cut -d ':' -f2)
-		echo " --pgrep ${process}--"
-		pgrep -f ${process_path} > /dev/null
-	fi
 }
 
 common_init(){
