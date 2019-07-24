@@ -38,3 +38,14 @@ and more idle `busybox` pods on a single node Kubernetes cluster.
 ```{r, echo=FALSE, fig.cap="K8S scaling"}
 source('scaling.R')
 ```
+
+\pagebreak
+
+# Runtime parallel scaling
+This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s_parallel.sh)
+measures the time taken to launch and delete pods in parallel using a deployment. The times
+are how long it takes for the whole deployment operation to complete.
+
+```{r, echo=FALSE, fig.cap="K8S parallel pods"}
+source('parallel.R')
+```
