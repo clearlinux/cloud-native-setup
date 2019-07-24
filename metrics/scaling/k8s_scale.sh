@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) 2019 Intel Corporation
-# 
+#
 # SPDX-License-Identifier: Apache-2.0
 #
 
@@ -11,7 +11,9 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_PATH}/../lib/common.bash"
 
 input_yaml="${SCRIPT_PATH}/bb.yaml.in"
+input_json="${SCRIPT_PATH}/bb.json.in"
 generated_yaml="${SCRIPT_PATH}/generated.yaml"
+generated_json="${SCRIPT_PATH}/generated.json"
 deployment="busybox"
 
 stats_pod="stats"
@@ -28,13 +30,18 @@ wait_time=${wait_time:-30}
 delete_wait_time=${delete_wait_time:-600}
 settle_time=${settle_time:-5}
 use_kata_runtime=${use_kata_runtime:-no}
+use_api=${use_api:-yes}
 
 # Set some default metrics env vars
 TEST_ARGS="runtime=${RUNTIME}"
 TEST_NAME="k8s scaling"
 
+API_ADDRESS="http://127.0.0.1"
+API_PORT="8090"
+
+# get the number of nodes in the "Ready" state
 get_num_nodes() {
-	n=$(kubectl get nodes --no-headers=true | wc -l)
+	n=$(kubectl get nodes --no-headers=true | awk '$2 == "Ready" {print $1}' | wc -l)
 	echo "$n"
 }
 
@@ -88,7 +95,7 @@ init() {
 		die "kubectl failed to get nodes"
 	fi
 
-	info $(get_num_nodes) "k8s nodes found"
+	info $(get_num_nodes) "k8s nodes in 'Ready' state found"
 	# We could check we have just the one node here - right now this is a single node
 	# test!! - because, our stats gathering is rudimentry, as k8s does not provide
 	# a nice way to do it (unless you want to parse 'descibe nodes')
@@ -96,6 +103,21 @@ init() {
 
 	# FIXME - check the node(s) can run enough pods - check 'max-pods' in the
 	# kubelet config - from 'kubectl describe node -o json' ?
+
+	# check if kubectl proxy is already running. If it is use the port,
+	# specified, otherwise start kubectl proxy command.
+	if [ $use_api != "no" ]; then
+		# assuming command was called "kubectl proxy --port=####"
+		# FIXME make this more flexible for --port parameter being in a different order
+		local port
+		port=$(ps -ef | awk '$8 == "kubectl" && $9 == "proxy" {print $10}' | cut -b1-7 --complement)
+		if [ -z $port ]; then
+			echo "starting kubectl proxy"
+			kubectl proxy --port=${API_PORT} &
+		else
+			API_PORT=$port
+		fi
+	fi
 
 	# Launch our stats gathering pod
 	kubectl apply -f ${SCRIPT_PATH}/${stats_pod}.yaml
@@ -138,23 +160,41 @@ run() {
 		info "Testing replicas ${reqs} of ${NUM_PODS}"
 		# Generate the next yaml file
 
-	local runtime_command
-	if [ "$use_kata_runtime" != "no" ]; then
-			runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
-	else
-			runtime_command="/@RUNTIMECLASS@/d"
-	fi
+		local runtime_command
+		if [ "$use_kata_runtime" != "no" ]; then
+				runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
+		else
+				runtime_command="/@RUNTIMECLASS@/d"
+		fi
 
-	sed -e "s|@REPLICAS@|${reqs}|g" \
-		-e $runtime_command \
-		-e "s|@DEPLOYMENT@|${deployment}|g" \
-		-e "s|@LABEL@|${LABEL}|g" \
-		-e "s|@LABELVALUE@|${LABELVALUE}|g" \
-		< ${input_yaml} > ${generated_yaml}
+		local input_template
+		local generated_file
+		if [ "$use_api" != "no" ]; then
+			input_template=$input_json
+			generated_file=$generated_json
+		else
+			input_template=$input_yaml
+			generated_file=$generated_yaml
+		fi
+
+		sed -e "s|@REPLICAS@|${reqs}|g" \
+			-e $runtime_command \
+			-e "s|@DEPLOYMENT@|${deployment}|g" \
+			-e "s|@LABEL@|${LABEL}|g" \
+			-e "s|@LABELVALUE@|${LABELVALUE}|g" \
+			< ${input_template} > ${generated_file}
 
 		info "Applying changes"
 		local start_time=$(date +%s%N)
-		kubectl apply -f ${generated_yaml}
+		if [ "$use_api" != "no" ]; then
+			if [ $reqs == 1 ]; then
+				curl -s ${API_ADDRESS}:${API_PORT}/apis/apps/v1/namespaces/default/deployments -XPOST -H 'Content-Type: application/json' -d@${generated_file} > /dev/null
+			else
+				curl -s ${API_ADDRESS}:${API_PORT}/apis/apps/v1/namespaces/default/deployments/${deployment} -XPATCH -H 'Content-Type:application/strategic-merge-patch+json' -d@${generated_file} > /dev/null
+			fi
+		else
+			kubectl apply -f ${generated_file}
+		fi
 
 		#cmd="kubectl get pods | grep busybox | grep Completed"
 		kubectl rollout status --timeout=${wait_time}s deployment/${deployment}
@@ -174,7 +214,7 @@ cleanup() {
 
 	kubectl delete pod --wait=true --timeout=${delete_wait_time}s "${stats_pod}" || true
 	local start_time=$(date +%s%N)
-	kubectl delete deployment --wait=true --timeout=${delete_wait_time}s "${deployment}" || true
+	kubectl delete deployment --wait=true --timeout=${delete_wait_time}s ${deployment} || true
 	for x in $(seq 1 ${delete_wait_time}); do
 		local npods=$(kubectl get pods -l=${LABEL}=${LABELVALUE} -o=name | wc -l)
 		if [ $npods -eq 0 ]; then
@@ -222,6 +262,8 @@ show_vars()
 	echo -e "\t\tSeconds to wait after pods ready before taking measurements"
 	echo -e "\tuse_kata_runtime (${use_kata_runtime})"
 	echo -e "\t\tspecify yes or no to use kata runtime"
+	echo -e "\tuse_api (${use_api})"
+	echo -e "\t\tspecify yes or no to use the API to launch pods"
 }
 
 help()
@@ -232,7 +274,7 @@ Usage: $0 [-h] [options]
 	Launch a series of workloads and take memory metric measurements after
 	each launch.
    Options:
-        -h,    Help page.
+		-h,    Help page.
 EOF
 )
 	echo "$usage"
@@ -245,9 +287,9 @@ main() {
 	while getopts "h" opt;do
 		case ${opt} in
 		h)
-		    help
-		    exit 0;
-		    ;;
+			help
+			exit 0;
+			;;
 		esac
 	done
 	shift $((OPTIND-1))
