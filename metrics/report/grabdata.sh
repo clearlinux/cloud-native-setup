@@ -72,6 +72,7 @@ run_scaling() {
 	echo "Running scaling tests"
 
 	(cd scaling; ./k8s_scale.sh)
+	(cd scaling; ./k8s_parallel.sh)
 }
 
 # Execute metrics scripts
