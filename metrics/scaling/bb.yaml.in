@@ -25,6 +25,7 @@ spec:
         @LABEL@: @LABELVALUE@
     spec:
       runtimeClassName: @RUNTIMECLASS@
+      automountServiceAccountToken: false
       containers:
       - name: bb
         image: busybox

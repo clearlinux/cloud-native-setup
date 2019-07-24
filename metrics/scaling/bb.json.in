@@ -1,0 +1,42 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    "metadata": {
+        "labels": {
+            "run": "busybox"
+        },
+        "name": "@DEPLOYMENT@"
+    },
+    "spec": {
+        "replicas": @REPLICAS@,
+        "selector": {
+            "matchLabels": {
+                "run": "busybox"
+            }
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "run": "busybox",
+                    "@LABEL@": "@LABELVALUE@"
+                }
+            },
+            "spec": {
+                "runtimeClassName": "@RUNTIMECLASS@",
+                "automountServiceAccountToken": false,
+                "containers": [{
+                    "name": "bb",
+                    "image": "busybox",
+                    "command": [
+                        "tail",
+                        "-f",
+                        "/dev/null"
+                    ],
+                    "stdin": true,
+                    "tty": true
+                }],
+                "restartPolicy": "Always"
+            }
+        }
+    }
+}
