@@ -38,6 +38,8 @@ TEST_NAME="k8s scaling"
 
 API_ADDRESS="http://127.0.0.1"
 API_PORT="8090"
+PROXY_CMD="kubectl proxy --port=${API_PORT}"
+clean_up_proxy=false
 
 # get the number of nodes in the "Ready" state
 get_num_nodes() {
@@ -113,8 +115,10 @@ init() {
 		port=$(ps -ef | awk '$8 == "kubectl" && $9 == "proxy" {print $10}' | cut -b1-7 --complement)
 		if [ -z $port ]; then
 			echo "starting kubectl proxy"
-			kubectl proxy --port=${API_PORT} &
+			clean_up_proxy=true
+			${PROXY_CMD} &
 		else
+			echo "found proxy port: ${port}"
 			API_PORT=$port
 		fi
 	fi
@@ -162,9 +166,9 @@ run() {
 
 		local runtime_command
 		if [ "$use_kata_runtime" != "no" ]; then
-				runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
+			runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
 		else
-				runtime_command="/@RUNTIMECLASS@/d"
+			runtime_command="/@RUNTIMECLASS@/d"
 		fi
 
 		local input_template
@@ -241,6 +245,12 @@ EOF
 
 	metrics_json_add_fragment "$json"
 	metrics_json_save
+
+	# if this script launched the proxy, clean it up to prevent hang on exit
+	if [ "$clean_up_proxy" = "true" ]; then
+		echo "cleaning up kubectl proxy"
+		kill $(pgrep -f "${PROXY_CMD}")
+	fi
 }
 
 show_vars()
