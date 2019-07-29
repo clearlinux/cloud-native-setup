@@ -10,6 +10,7 @@ RESULT_DIR="${LIB_DIR}/../results"
 
 source ${LIB_DIR}/kata-common.bash
 source ${LIB_DIR}/json.bash
+source ${LIB_DIR}/k8s-api.bash
 source /etc/os-release || source /usr/lib/os-release
 
 # Set variables to reasonable defaults if unset or empty
