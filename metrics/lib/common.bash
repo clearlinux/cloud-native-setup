@@ -14,7 +14,6 @@ source /etc/os-release || source /usr/lib/os-release
 
 # Set variables to reasonable defaults if unset or empty
 DOCKER_EXE="${DOCKER_EXE:-docker}"
-RUNTIME="${RUNTIME:-kata-runtime}"
 
 KSM_BASE="/sys/kernel/mm/ksm"
 KSM_ENABLE_FILE="${KSM_BASE}/run"
@@ -188,23 +187,6 @@ show_system_state() {
 	done
 }
 
-common_init(){
-
-	# If we are running a kata runtime, go extract its environment
-	# for later use.
-	local iskata=$(is_a_kata_runtime "$RUNTIME")
-
-	if [ "$iskata" == "1" ]; then
-		extract_kata_env
-	else
-		# We know we have nothing to do for runc
-		if [ "$RUNTIME" != "runc" ]; then
-			warning "Unrecognised runtime ${RUNTIME}"
-		fi
-	fi
-}
-
-
 # Save the current KSM settings so we can restore them later
 save_ksm_settings(){
 	echo "saving KSM settings"
@@ -307,4 +289,3 @@ wait_ksm_settle(){
 	echo "Timed out after ${1}s waiting for KSM to settle"
 }
 
-common_init
