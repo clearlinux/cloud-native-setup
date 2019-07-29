@@ -9,6 +9,12 @@
 declare -a json_result_array
 declare -a json_array_array
 
+# Default to dropping the data - in the very rare case that we
+# call 'save' before we have completed 'init' (in the quit/cleanup
+# scenario), it is possible we try to write to '$json_filename' before
+# it has been set up, which results in an 'ambiguous redirect' error.
+json_filename="/dev/null"
+
 # Generate a timestamp in milliseconds since 1st Jan 1970
 timestamp_ms() {
 	echo $(($(date +%s%N)/1000000))
@@ -32,22 +38,23 @@ EOF
 )"
 	metrics_json_add_fragment "$json"
 
+	# Grab the kubectl version info, which also gets us some server
+	# version info
 	local json="$(cat << EOF
-	"env" : {
-		"RuntimeVersion": "$RUNTIME_VERSION",
-		"RuntimeCommit": "$RUNTIME_COMMIT",
-		"RuntimeConfig": "$RUNTIME_CONFIG_PATH",
-		"Hypervisor": "$HYPERVISOR_PATH",
-		"HypervisorVersion": "$HYPERVISOR_VERSION",
-		"Proxy": "$PROXY_PATH",
-		"ProxyVersion": "$PROXY_VERSION",
-		"Shim": "$SHIM_PATH",
-		"ShimVersion": "$SHIM_VERSION",
-		"machinename": "$(uname -n)"
-	}
+	"kubectl-version" :
+	$(kubectl version -o=json)
 EOF
 )"
+	metrics_json_add_fragment "$json"
 
+	# grab the cluster node info. We *could* grab 'kubectl cluster-info dump' here, but
+	# that generates a lot of data, and we would have to trim tne non-JSON logs off the
+	# end of it.
+	local json="$(cat << EOF
+	"kubectl-get-nodes" :
+	$(kubectl get nodes -o=json)
+EOF
+)"
 	metrics_json_add_fragment "$json"
 
 	local json="$(cat << EOF
@@ -67,42 +74,6 @@ EOF
 EOF
 )"
 	metrics_json_add_fragment "$json"
-
-	# Now add a runtime specific environment section if we can
-	if [ "$1" == "k8s" ]; then
-		# FIXME - add k8s specific data dump here.
-		true
-	else
-		local iskata=$(is_a_kata_runtime "$RUNTIME")
-		if [ "$iskata" == "1" ]; then
-			local rpath="$(get_docker_kata_path $RUNTIME)"
-			local json="$(cat << EOF
-	"kata-env" :
-	$($rpath kata-env --json)
-EOF
-)"
-			metrics_json_add_fragment "$json"
-		else
-			if [ "$RUNTIME" == "runc" ]; then
-				local output=$(docker-runc -v)
-				local runcversion=$(grep version <<< "$output" | sed 's/runc version //')
-				local runccommit=$(grep commit <<< "$output" | sed 's/commit: //')
-				local json="$(cat << EOF
-	"runc-env" :
-	{
-		"Version": {
-			"Semver": "$runcversion",
-			"Commit": "$runccommit"
-		}
-	}
-EOF
-)"
-				metrics_json_add_fragment "$json"
-			else
-				warning "Unrecognised runtime ${RUNTIME} - no env extracted"
-			fi
-		fi
-	fi
 
 	metrics_json_end_of_system
 }
