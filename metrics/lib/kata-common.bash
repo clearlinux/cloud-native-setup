@@ -31,24 +31,6 @@ info() {
 	echo "INFO: $msg"
 }
 
-# Check if the $1 argument is the name of a 'known'
-# Kata runtime. Of course, the end user can choose any name they
-# want in reality, but this function knows the names of the default
-# and recommended Kata docker runtime install names.
-is_a_kata_runtime(){
-	case "$1" in
-	"kata-runtime") ;&	# fallthrough
-	"kata-qemu") ;&		# fallthrough
-	"kata-fc")
-		echo "1"
-		return
-		;;
-	esac
-
-	echo "0"
-}
-
-
 # Try to find the real runtime path for the docker runtime passed in $1
 get_docker_kata_path(){
 	local jpaths=$(docker info --format "{{json .Runtimes}}" || true)

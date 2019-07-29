@@ -18,7 +18,6 @@ deployment="busybox"
 
 stats_pod="stats"
 
-export RUNTIME="kata-qemu"
 NUM_PODS=${NUM_PODS:-20}
 STEP=${STEP:-1}
 
@@ -29,7 +28,6 @@ LABELVALUE=${LABELVALUE:-gandalf}
 wait_time=${wait_time:-30}
 delete_wait_time=${delete_wait_time:-600}
 settle_time=${settle_time:-5}
-use_kata_runtime=${use_kata_runtime:-no}
 use_api=${use_api:-yes}
 
 # Set some default metrics env vars
@@ -165,7 +163,7 @@ run() {
 		# Generate the next yaml file
 
 		local runtime_command
-		if [ "$use_kata_runtime" != "no" ]; then
+		if [ -n "$RUNTIME" ]; then
 			runtime_command="s|@RUNTIMECLASS@|${RUNTIME}|g"
 		else
 			runtime_command="/@RUNTIMECLASS@/d"
@@ -271,8 +269,6 @@ show_vars()
 	echo -e "\t\tSeconds to wait for all pods to be deleted"
 	echo -e "\tsettle_time (${settle_time})"
 	echo -e "\t\tSeconds to wait after pods ready before taking measurements"
-	echo -e "\tuse_kata_runtime (${use_kata_runtime})"
-	echo -e "\t\tspecify yes or no to use kata runtime"
 	echo -e "\tuse_api (${use_api})"
 	echo -e "\t\tspecify yes or no to use the API to launch pods"
 }
