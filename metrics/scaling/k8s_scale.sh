@@ -191,7 +191,8 @@ run() {
 		info "Applying changes"
 		local start_time=$(date +%s%N)
 		if [ "$use_api" != "no" ]; then
-			if [ $reqs == 1 ]; then
+			# If this is the first launch of the deploy, we need to use a different URL form.
+			if [ $reqs == ${STEP} ]; then
 				curl -s ${API_ADDRESS}:${API_PORT}/apis/apps/v1/namespaces/default/deployments -XPOST -H 'Content-Type: application/json' -d@${generated_file} > /dev/null
 			else
 				curl -s ${API_ADDRESS}:${API_PORT}/apis/apps/v1/namespaces/default/deployments/${deployment} -XPATCH -H 'Content-Type:application/strategic-merge-patch+json' -d@${generated_file} > /dev/null
