@@ -172,7 +172,7 @@ boot_line_plot <- ggplot() +
 	theme(axis.text.x=element_text(angle=90))
 
 if ( skip_points == 0 ) {
-	cpu_line_plot = cpu_line_plot + geom_point( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.3)
+	boot_line_plot = boot_line_plot + geom_point( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.3)
 }
 
 mem_text <- paste("Footprint density statistics")
