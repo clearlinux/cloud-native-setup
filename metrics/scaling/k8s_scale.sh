@@ -39,41 +39,68 @@ TEST_NAME="k8s scaling"
 grab_stats() {
 	local launch_time_ms=$1
 	local n_pods=$2
+    local cpu_idle=()
+    local mem_free=()
 	info "And grab some stats"
-	# Tell mpstat to measure over a short period, not only so we get slightly de-noised data, but also
-	# if you don't tell it the period, you will get the avg since boot, which is not what we want.
-	local cpu_idle=$(kubectl exec -ti ${stats_pod} -- sh -c "mpstat -u 3 1 | tail -1 | awk '{print \$11}'" | sed 's/\r//')
-	local mem_free=$(kubectl exec -ti ${stats_pod} -- sh -c "free | tail -2 | head -1 | awk '{print \$4}'" | sed 's/\r//')
 
-	info "idle [$cpu_idle] free [$mem_free] launch [$launch_time]"
-
-	# Annoyingly, it seems sometimes once in a while we don't get an answer!
-	# We should really retry, but for now, make the json valid at least
-	cpu_idle=${cpu_idle:-0}
-	mem_free=${mem_free:-0}
-
-	local json="$(cat << EOF
-	{
-		"n_pods": {
-			"Result": ${n_pods},
-			"Units" : "int"
-		},
-		"cpu_idle": {
-			"Result": ${cpu_idle},
-			"Units" : "%"
-		},
-		"launch_time": {
-			"Result": $launch_time_ms,
-			"Units" : "ms"
-		},
-		"mem_free": {
-			"Result": ${mem_free},
-			"Units" : "kb"
-		}
-	}
+    local pods_json="$(cat << EOF
+            "n_pods": {
+                "Result": ${n_pods},
+                "Units" : "int"
+            }
 EOF
-)"
-	metrics_json_add_array_element "$json"
+    )"
+    metrics_json_add_array_fragment "$pods_json"
+
+    local launch_json="$(cat << EOF
+            "launch_time": {
+                "Result": $launch_time_ms,
+                "Units" : "ms"
+            }
+EOF
+    )"
+    metrics_json_add_array_fragment "$launch_json"
+
+    metrics_json_start_nested_array
+
+    # grab pods in the stats daemonset
+    # use 3 for the file descriptor rather than stdin otherwise the sh commands
+    # in the middle will read the rest of stdin
+    while read -u 3 name node; do
+        # Tell mpstat to measure over a short period, not only so we get slightly de-noised data, but also
+        # if you don't tell it the period, you will get the avg since boot, which is not what we want.
+        local cpu_idle=$(kubectl exec -ti $name -- sh -c "mpstat -u 3 1 | tail -1 | awk '{print \$11}'" | sed 's/\r//')
+        local mem_free=$(kubectl exec -ti $name -- sh -c "free | tail -2 | head -1 | awk '{print \$4}'" | sed 's/\r//')
+
+        info "idle [$cpu_idle] free [$mem_free] launch [$launch_time_ms] node [$node]"
+
+        # Annoyingly, it seems sometimes once in a while we don't get an answer!
+        # We should really retry, but for now, make the json valid at least
+        cpu_idle=${cpu_idle:-0}
+        mem_free=${mem_free:-0}
+
+        local util_json="$(cat << EOF
+        {
+            "node": "${node}",
+            "cpu_idle": {
+                "Result": ${cpu_idle},
+                "Units" : "%"
+            },
+            "mem_free": {
+                "Result": ${mem_free},
+                "Units" : "kb"
+            }
+        }
+EOF
+        )"
+
+        metrics_json_add_nested_array_element "$util_json"
+
+    done 3< <(kubectl get pods --selector name=stats-pods -o json | jq -r '.items[] | "\(.metadata.name) \(.spec.nodeName)"')
+
+    metrics_json_end_nested_array "node_util"
+
+    metrics_json_close_array_element
 }
 
 init() {
@@ -97,7 +124,7 @@ init() {
 
 	# Launch our stats gathering pod
 	kubectl apply -f ${SCRIPT_PATH}/${stats_pod}.yaml
-	kubectl wait --for=condition=Ready pod "${stats_pod}"
+	kubectl rollout status --timeout=${wait_time}s daemonset/${stats_pod}
 
 	# FIXME - we should probably 'warm up' the cluster with the container image(s) we will
 	# use for testing, otherwise the download time will likely be included in the first pod
@@ -189,7 +216,7 @@ cleanup() {
 	# First try to save any results we got
 	metrics_json_end_array "BootResults"
 
-	kubectl delete pod --wait=true --timeout=${delete_wait_time}s "${stats_pod}" || true
+	kubectl delete daemonset --wait=true --timeout=${delete_wait_time}s "${stats_pod}" || true
 	local start_time=$(date +%s%N)
 	kubectl delete deployment --wait=true --timeout=${delete_wait_time}s ${deployment} || true
 	for x in $(seq 1 ${delete_wait_time}); do

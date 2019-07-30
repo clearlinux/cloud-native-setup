@@ -56,8 +56,8 @@ for (currentdir in resultdirs) {
 
 			testname=datasetname
 
-			cdata=data.frame(avail_gb=as.numeric(fdata$BootResults$mem_free$Result)/(1024*1024))
-			cdata=cbind(cdata, cpu_idle=as.numeric(fdata$BootResults$cpu_idle$Result))
+			cdata=data.frame(avail_gb=as.numeric(fdata$BootResults$node_util$mem_free$Result)/(1024*1024))
+			cdata=cbind(cdata, cpu_idle=as.numeric(fdata$BootResults$node_util$cpu_idle$Result))
 			# convert ms to seconds
 			cdata=cbind(cdata, boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
 			# FIXME - we should seq from 0 index
@@ -125,7 +125,7 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 	rows=NULL
 	))
 
-# plot how samples varioed over  'time'
+# plot how samples varied over  'time'
 mem_line_plot <- ggplot() +
 	geom_line( data=data, aes(count, avail_gb, colour=testname, group=dataset), alpha=0.2) +
 	geom_smooth( data=data, aes(count, avail_gb, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +

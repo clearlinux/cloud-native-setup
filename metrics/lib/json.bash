@@ -8,6 +8,7 @@
 
 declare -a json_result_array
 declare -a json_array_array
+declare -a json_nested_array
 
 # Default to dropping the data - in the very rare case that we
 # call 'save' before we have completed 'init' (in the quit/cleanup
@@ -134,6 +135,73 @@ metrics_json_add_fragment() {
 
 	# Place on end of array
 	json_result_array[${#json_result_array[@]}]="$data"
+}
+
+# For building an array in an array element
+metrics_json_start_nested_array() {
+    json_nested_array=()
+}
+
+# Add a (complete) element to the current nested array
+metrics_json_add_nested_array_element() {
+	local data=$1
+
+	# Place on end of array
+	json_nested_array[${#json_nested_array[@]}]="$data"
+}
+
+# Add a fragment to the current nested array element
+metrics_json_add_nested_array_fragment() {
+	local data=$1
+
+	# Place on end of array
+	json_nested_array_fragments[${#json_nested_array_fragments[@]}]="$data"
+}
+
+# Turn the currently registered nested array fragments into an array element
+metrics_json_close_nested_array_element() {
+
+	local maxelem=$(( ${#json_nested_array_fragments[@]} - 1 ))
+	local json="$(cat << EOF
+	{
+		$(for index in $(seq 0 $maxelem); do
+			if (( index != maxelem )); then
+				echo "${json_nested_array_fragments[$index]},"
+			else
+				echo "${json_nested_array_fragments[$index]}"
+			fi
+		done)
+	}
+EOF
+)"
+
+	# And save that to the top level
+	metrics_json_add_nested_array_element "$json"
+
+	# Reset the array fragment array ready for a new one
+	json_nested_array_fragments=()
+}
+
+# Close the current nested array
+metrics_json_end_nested_array() {
+	local name=$1
+
+	local maxelem=$(( ${#json_nested_array[@]} - 1 ))
+	local json="$(cat << EOF
+	"$name": [
+		$(for index in $(seq 0 $maxelem); do
+			if (( index != maxelem )); then
+				echo "${json_nested_array[$index]},"
+			else
+				echo "${json_nested_array[$index]}"
+			fi
+		done)
+	]
+EOF
+)"
+
+	# And save that to the top level
+	metrics_json_add_array_fragment "$json"
 }
 
 # Prepare to collect up array elements
