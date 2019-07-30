@@ -148,10 +148,10 @@ save_config(){
 	local json="$(cat << EOF
 	{
 		"testname": "${TEST_NAME}",
-		"NUM_PODS": "${NUM_PODS}",
-		"STEP": "${STEP}",
-		"wait_time": "${wait_time}",
-		"delete_wait_time": "${delete_wait_time}"
+		"NUM_PODS": ${NUM_PODS},
+		"STEP": ${STEP},
+		"wait_time": ${wait_time},
+		"delete_wait_time": ${delete_wait_time}
 	}
 EOF
 )"
