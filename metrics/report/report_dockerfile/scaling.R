@@ -132,11 +132,11 @@ for (currentdir in resultdirs) {
 				node_avail_gb=paste(nodename, "_avail_gb", sep="")
 				# Work out memory reduction by subtracting last (most consumed) from
 				srdata=cbind(mem_consumed=as.numeric(as.character(cdata[, node_avail_gb][1])) -
-					     as.numeric(as.character(cdata[, node_avail_gb][length(cdata[, node_avail_gb])])))
+							 as.numeric(as.character(cdata[, node_avail_gb][length(cdata[, node_avail_gb])])))
 				
 				node_cpu_idle=paste(nodename, "_cpu_idle", sep="")
 				srdata=cbind(srdata, cpu_consumed=as.numeric(as.character(cdata[, node_cpu_idle][1])) -
-					     as.numeric(as.character(cdata[, node_cpu_idle][length(cdata[, node_cpu_idle])])))
+							 as.numeric(as.character(cdata[, node_cpu_idle][length(cdata[, node_cpu_idle])])))
 				sudata=rbind(sudata, srdata)
 			}
 			sdata=cbind(sdata, mem_consumed=sum(sudata[, "mem_consumed"]))
@@ -185,10 +185,10 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 	rows=NULL
 	))
 
-# plot how samples varied over  'time'
-mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)), 
-						    as.numeric(as.character(mem_free)), 
-						    colour=interaction(testname, node), group=interaction(testname, node))) +
+# plot how samples varied over	'time'
+mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
+							as.numeric(as.character(mem_free)),
+							colour=interaction(testname, node), group=interaction(testname, node))) +
 	geom_line(alpha=0.2) +
 	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
@@ -209,10 +209,10 @@ cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats),
 	rows=NULL
 	))
 
-# plot how samples varied over  'time'
-cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)), 
-						    as.numeric(as.character(cpu_idle)), 
-						    colour=interaction(testname, node), group=interaction(testname, node))) +
+# plot how samples varied over	'time'
+cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
+							as.numeric(as.character(cpu_idle)),
+							colour=interaction(testname, node), group=interaction(testname, node))) +
 	geom_line(alpha=0.2) +
 	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
@@ -246,7 +246,7 @@ cpu_text <- paste("System CPU consumption statistics")
 cpu_text.p <- ggparagraph(text=cpu_text, face="italic", size="10", color="black")
 
 # See https://www.r-bloggers.com/ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/ for
-# excellent examples 
+# excellent examples
 master_plot = grid.arrange(
 	mem_line_plot,
 	cpu_line_plot,
@@ -256,5 +256,5 @@ master_plot = grid.arrange(
 	cpu_text.p,
 	boot_line_plot,
 	nrow=7,
-        heights=c(1, 1, 0.8, 0.1, 0.8, 0.1, 1) )
+	heights=c(1, 1, 0.8, 0.1, 0.8, 0.1, 1) )
 
