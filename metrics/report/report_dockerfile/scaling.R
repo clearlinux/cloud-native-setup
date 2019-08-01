@@ -18,6 +18,7 @@ testnames=c(
 )
 
 data=c()
+fndata=c()
 stats=c()
 rstats=c()
 rstats_names=c()
@@ -56,18 +57,66 @@ for (currentdir in resultdirs) {
 
 			testname=datasetname
 
-			cdata=data.frame(avail_gb=as.numeric(fdata$BootResults$node_util$mem_free$Result)/(1024*1024))
-			cdata=cbind(cdata, cpu_idle=as.numeric(fdata$BootResults$node_util$cpu_idle$Result))
+			cdata=data.frame(boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
+			
+			# format the utilization data
+			udata=data.frame(nodename=fdata$BootResults$node_util)
+			for (i in seq(length(cdata[, "boot_time"]))) {
+				if (i == 1) {
+					# first iteration provide column name for c1
+					c1=cbind(node=udata$nodename.node)
+					c2=cbind(udata$nodename.cpu_idle$Result)
+					c3=cbind(udata$nodename.mem_free$Result)/(1024*1024)
+					c4=cbind(rep(i, length(udata$nodename.node)))
+					c5=cbind(rep(testname, length(udata$nodename.node)))
+					# declare formated utility data
+					fudata=cbind(c1,c2,c3,c4,c5)
+				}
+				else {
+					# shift to 0 based indexing
+					index=i-1
+					sindex=(index*3)+1
+					eindex=sindex+2
+					# grab 3 columns for next row bind
+					row=cbind(udata[,sindex:eindex])
+					c1=cbind(node=row[,1])
+					c2=cbind(row[,2]$Result)
+					c3=cbind(row[,3]$Result)/(1024*1024)
+					c4=cbind(rep(i, length(udata$nodename.node)))
+					c5=cbind(rep(testname, length(udata$nodename.node)))
+					# create the new row (which is actually the number of nodes of rows)
+					frow=cbind(c1,c2,c3,c4,c5)
+					fudata=rbind(fudata,frow)
+
+				}
+			}
+			colnames(fudata)=c("node", "cpu_idle", "mem_free", "pod", "testname")
+			# fudata is considered a vector for some reason so converting it to a data.frame	
+			fudata=as.data.frame(fudata)
+			# get unique node names
+			nodes=unique(fudata$node)
+			
+
+			for (nodename in nodes) {
+				c1=cbind(subset(fudata,node==nodename)["mem_free"])
+				# extra work to name the column from a variable
+				colnames(c1)=paste(nodename,"_avail_gb", sep="")
+				cdata=cbind(cdata, c1)
+
+				c2=cbind(subset(fudata,node==nodename)["cpu_idle"])
+				colnames(c2)=paste(nodename,"_cpu_idle", sep="")
+				cdata=cbind(cdata, c2)
+			}
+			
 			# convert ms to seconds
-			cdata=cbind(cdata, boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
 			# FIXME - we should seq from 0 index
-			if (length(cdata[, "avail_gb"]) > 20) {
+			if (length(cdata[, "boot_time"]) > 20) {
 				skip_points=1
 			}
 
-			cdata=cbind(cdata, count=seq_len(length(cdata[, "avail_gb"])))
-			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "avail_gb"]) ))
-			cdata=cbind(cdata, dataset=rep(datasetname, length(cdata[, "avail_gb"]) ))
+			cdata=cbind(cdata, count=seq_len(length(cdata[, "boot_time"])))
+			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "boot_time"]) ))
+			cdata=cbind(cdata, dataset=rep(datasetname, length(cdata[, "boot_time"]) ))
 
 			# Gather our statistics
 			# '-1' containers, as the first entry should be a data capture of before
@@ -75,19 +124,30 @@ for (currentdir in resultdirs) {
 			# FIXME - once the test starts to store a stats baseline in slot 0, then
 			# we should re-enable the '-1'
 			#sdata=data.frame(num_containers=length(cdata[, "avail_gb"])-1)
-			sdata=data.frame(num_containers=length(cdata[, "avail_gb"]))
-			# Work out memory reduction by subtracting last (most consumed) from
+			sdata=data.frame(num_containers=length(cdata[, "boot_time"]))
+			sudata=c()
 			# first (which should be 0-containers)
-			sdata=cbind(sdata, mem_consumed= cdata[, "avail_gb"][1] -
-				cdata[, "avail_gb"][length(cdata[, "avail_gb"])])
-			sdata=cbind(sdata, cpu_consumed= cdata[, "cpu_idle"][1] -
-				cdata[, "cpu_idle"][length(cdata[, "cpu_idle"])])
+			# FIXME - don't calculate nodes with NoSchedule effect on node-role.kubernetes.io/master taint
+			for (nodename in nodes) {
+				node_avail_gb=paste(nodename, "_avail_gb", sep="")
+				# Work out memory reduction by subtracting last (most consumed) from
+				srdata=cbind(mem_consumed=as.numeric(as.character(cdata[, node_avail_gb][1])) -
+					     as.numeric(as.character(cdata[, node_avail_gb][length(cdata[, node_avail_gb])])))
+				
+				node_cpu_idle=paste(nodename, "_cpu_idle", sep="")
+				srdata=cbind(srdata, cpu_consumed=as.numeric(as.character(cdata[, node_cpu_idle][1])) -
+					     as.numeric(as.character(cdata[, node_cpu_idle][length(cdata[, node_cpu_idle])])))
+				sudata=rbind(sudata, srdata)
+			}
+			sdata=cbind(sdata, mem_consumed=sum(sudata[, "mem_consumed"]))
+			sdata=cbind(sdata, cpu_consumed=sum(sudata[, "cpu_consumed"]))
 			sdata=cbind(sdata, boot_time=cdata[, "boot_time"][length(cdata[, "boot_time"])])
 			sdata=cbind(sdata, avg_gb_per_c=sdata$mem_consumed / sdata$num_containers)
 			sdata=cbind(sdata, runtime=testname)
 
 			# Store away as a single set
 			data=rbind(data, cdata)
+			fndata=rbind(fndata, fudata)
 			stats=rbind(stats, sdata)
 
 			ms = c(
@@ -126,9 +186,11 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 	))
 
 # plot how samples varied over  'time'
-mem_line_plot <- ggplot() +
-	geom_line( data=data, aes(count, avail_gb, colour=testname, group=dataset), alpha=0.2) +
-	geom_smooth( data=data, aes(count, avail_gb, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +
+mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)), 
+						    as.numeric(as.character(mem_free)), 
+						    colour=interaction(testname, node), group=interaction(testname, node))) +
+	geom_line(alpha=0.2) +
+	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma) +
@@ -139,7 +201,7 @@ mem_line_plot <- ggplot() +
 # If we only have relatively few samples, add points to the plot. Otherwise, skip as
 # the plot becomes far too noisy
 if ( skip_points == 0 ) {
-	mem_line_plot = mem_line_plot + geom_point( data=data, aes(count, avail_gb, colour=testname, group=dataset), alpha=0.3)
+	mem_line_plot = mem_line_plot + geom_point(alpha=0.3)
 }
 
 cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats),
@@ -147,10 +209,12 @@ cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats),
 	rows=NULL
 	))
 
-# plot how samples varioed over  'time'
-cpu_line_plot <- ggplot() +
-	geom_line( data=data, aes(count, cpu_idle, colour=testname, group=dataset), alpha=0.2) +
-	geom_smooth( data=data, aes(count, cpu_idle, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +
+# plot how samples varied over  'time'
+cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)), 
+						    as.numeric(as.character(cpu_idle)), 
+						    colour=interaction(testname, node), group=interaction(testname, node))) +
+	geom_line(alpha=0.2) +
+	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
@@ -158,7 +222,7 @@ cpu_line_plot <- ggplot() +
 	theme(axis.text.x=element_text(angle=90))
 
 if ( skip_points == 0 ) {
-	cpu_line_plot = cpu_line_plot + geom_point( data=data, aes(count, cpu_idle, colour=testname, group=dataset), alpha=0.3)
+	cpu_line_plot = cpu_line_plot + geom_point(alpha=0.3)
 }
 
 # Show how boot time changed
@@ -187,12 +251,10 @@ master_plot = grid.arrange(
 	mem_line_plot,
 	cpu_line_plot,
 	mem_stats_plot,
-	cpu_stats_plot,
 	mem_text.p,
+	cpu_stats_plot,
 	cpu_text.p,
 	boot_line_plot,
-	zeroGrob(),
-	nrow=4,
-	ncol=2,
-        heights=c(1, 0.8, 0.1, 1) )
+	nrow=7,
+        heights=c(1, 1, 0.8, 0.1, 0.8, 0.1, 1) )
 
