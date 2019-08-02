@@ -65,50 +65,51 @@ for (currentdir in resultdirs) {
 				if (i == 1) {
 					# first iteration provide column name for c1
 					c1=cbind(node=udata$nodename.node)
-					c2=cbind(udata$nodename.cpu_idle$Result)
-					c3=cbind(udata$nodename.mem_free$Result)/(1024*1024)
-					c4=cbind(rep(i, length(udata$nodename.node)))
-					c5=cbind(rep(testname, length(udata$nodename.node)))
-					# FIXME figure out how to add schedule here ###
-					# then add to cdata below as well ###
-					# then update calculations to exclude schedule=false ###
-
+					c2=cbind(udata$nodename.noschedule)
+					c3=cbind(udata$nodename.cpu_idle$Result)
+					c4=cbind(udata$nodename.mem_free$Result)/(1024*1024)
+					c5=cbind(rep(i, length(udata$nodename.node)))
+					c6=cbind(rep(testname, length(udata$nodename.node)))
 					# declare formatted utility data
-					fudata=cbind(c1,c2,c3,c4,c5)
+					fudata=cbind(c1,c2,c3,c4,c5,c6)
 				}
 				else {
 					# shift to 0 based indexing
 					index=i-1
-					sindex=(index*3)+1
-					eindex=sindex+2
+					sindex=(index*4)+1
+					eindex=sindex+3
 					# grab 3 columns for next row bind
 					row=cbind(udata[,sindex:eindex])
 					c1=cbind(node=row[,1])
-					c2=cbind(row[,2]$Result)
-					c3=cbind(row[,3]$Result)/(1024*1024)
-					c4=cbind(rep(i, length(udata$nodename.node)))
-					c5=cbind(rep(testname, length(udata$nodename.node)))
+					c2=cbind(row[,2])
+					c3=cbind(row[,3]$Result)
+					c4=cbind(row[,4]$Result)/(1024*1024)
+					c5=cbind(rep(i, length(udata$nodename.node)))
+					c6=cbind(rep(testname, length(udata$nodename.node)))
 					# create the new row (which is actually the number of nodes of rows)
-					frow=cbind(c1,c2,c3,c4,c5)
+					frow=cbind(c1,c2,c3,c4,c5,c6)
 					fudata=rbind(fudata,frow)
 				}
 			}
-			colnames(fudata)=c("node", "cpu_idle", "mem_free", "pod", "testname")
+			colnames(fudata)=c("node", "noschedule", "cpu_idle", "mem_free", "pod", "testname")
 			# fudata is considered a vector for some reason so converting it to a data.frame
 			fudata=as.data.frame(fudata)
 			# get unique node names
 			nodes=unique(fudata$node)
 
-
 			for (nodename in nodes) {
-				c1=cbind(subset(fudata,node==nodename)["mem_free"])
-				# extra work to name the column from a variable
-				colnames(c1)=paste(nodename,"_avail_gb", sep="")
+				c1=cbind(subset(fudata,node==nodename)["noschedule"])
+				colnames(c1)=paste(nodename,"_noschedule", sep="")
 				cdata=cbind(cdata, c1)
 
-				c2=cbind(subset(fudata,node==nodename)["cpu_idle"])
-				colnames(c2)=paste(nodename,"_cpu_idle", sep="")
+				c2=cbind(subset(fudata,node==nodename)["mem_free"])
+				# extra work to name the column from a variable
+				colnames(c2)=paste(nodename,"_avail_gb", sep="")
 				cdata=cbind(cdata, c2)
+
+				c3=cbind(subset(fudata,node==nodename)["cpu_idle"])
+				colnames(c3)=paste(nodename,"_cpu_idle", sep="")
+				cdata=cbind(cdata, c3)
 			}
 
 			# convert ms to seconds
@@ -130,8 +131,12 @@ for (currentdir in resultdirs) {
 			sdata=data.frame(num_containers=length(cdata[, "boot_time"]))
 			sudata=c()
 			# first (which should be 0-containers)
-			# FIXME - don't calculate nodes with NoSchedule effect on node-role.kubernetes.io/master taint
 			for (nodename in nodes) {
+				node_noschedule=paste(nodename, "_noschedule", sep="")
+				# if workloads are not scheduled on this node, don't include it in the calculations below
+				if(cdata[, node_noschedule][1] == "true") {
+					next
+				}
 				node_avail_gb=paste(nodename, "_avail_gb", sep="")
 				# Work out memory reduction by subtracting last (most consumed) from
 				srdata=cbind(mem_consumed=as.numeric(as.character(cdata[, node_avail_gb][1])) -

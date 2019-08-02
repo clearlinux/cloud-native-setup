@@ -24,6 +24,7 @@ spec:
         run: busybox
         @LABEL@: @LABELVALUE@
     spec:
+      terminationGracePeriodSeconds: @GRACE@
       runtimeClassName: @RUNTIMECLASS@
       automountServiceAccountToken: false
       containers:

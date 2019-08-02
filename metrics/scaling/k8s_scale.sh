@@ -29,6 +29,7 @@ wait_time=${wait_time:-30}
 delete_wait_time=${delete_wait_time:-600}
 settle_time=${settle_time:-5}
 use_api=${use_api:-yes}
+grace=${grace:-30}
 
 # Set some default metrics env vars
 TEST_ARGS="runtime=${RUNTIME}"
@@ -68,11 +69,11 @@ EOF
 	# in the middle will read the rest of stdin
 	while read -u 3 name node; do
 		# look for taint that prevents scheduling
-		local schedule=false
+		local noschedule=false
 		local t_match_values=$(kubectl get node ${node} -o json | jq 'select(.spec.taints) | .spec.taints[].effect == "NoSchedule"')
-		for v in t_match_values; do
-			if [[ v == true ]]; then
-				schedule=true
+		for v in $t_match_values; do
+			if [[ $v == true ]]; then
+				noschedule=true
 				break
 			fi
 		done
@@ -91,6 +92,7 @@ EOF
 		local util_json="$(cat << EOF
 		{
 			"node": "${node}",
+			"noschedule": "${noschedule}",
 			"cpu_idle": {
 				"Result": ${cpu_idle},
 				"Units" : "%"
@@ -198,6 +200,7 @@ run() {
 			-e "s|@DEPLOYMENT@|${deployment}|g" \
 			-e "s|@LABEL@|${LABEL}|g" \
 			-e "s|@LABELVALUE@|${LABELVALUE}|g" \
+			-e "s|@GRACE@|${grace}|g" \
 			< ${input_template} > ${generated_file}
 
 		info "Applying changes"
@@ -281,6 +284,8 @@ show_vars()
 	echo -e "\t\tSeconds to wait after pods ready before taking measurements"
 	echo -e "\tuse_api (${use_api})"
 	echo -e "\t\tspecify yes or no to use the API to launch pods"
+	echo -e "\tgrace (${grace})"
+	echo -e "\t\tspecify the grace period in seconds for workload pod termination"
 }
 
 help()
