@@ -67,6 +67,15 @@ EOF
 	# use 3 for the file descriptor rather than stdin otherwise the sh commands
 	# in the middle will read the rest of stdin
 	while read -u 3 name node; do
+		# look for taint that prevents scheduling
+		local schedule=false
+		local t_match_values=$(kubectl get node ${node} -o json | jq 'select(.spec.taints) | .spec.taints[].effect == "NoSchedule"')
+		for v in t_match_values; do
+			if [[ v == true ]]; then
+				schedule=true
+				break
+			fi
+		done
 		# Tell mpstat to measure over a short period, not only so we get slightly de-noised data, but also
 		# if you don't tell it the period, you will get the avg since boot, which is not what we want.
 		local cpu_idle=$(kubectl exec -ti $name -- sh -c "mpstat -u 3 1 | tail -1 | awk '{print \$11}'" | sed 's/\r//')
@@ -159,6 +168,10 @@ run() {
 	trap cleanup EXIT QUIT KILL
 
 	metrics_json_start_array
+
+	# grab starting stats before launching workload pods
+	grab_stats 0 0
+
 	for reqs in $(seq ${STEP} ${STEP} ${NUM_PODS}); do
 		info "Testing replicas ${reqs} of ${NUM_PODS}"
 		# Generate the next yaml file
