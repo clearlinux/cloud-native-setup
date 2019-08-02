@@ -58,7 +58,7 @@ for (currentdir in resultdirs) {
 			testname=datasetname
 
 			cdata=data.frame(boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
-			
+
 			# format the utilization data
 			udata=data.frame(nodename=fdata$BootResults$node_util)
 			for (i in seq(length(cdata[, "boot_time"]))) {
@@ -69,7 +69,11 @@ for (currentdir in resultdirs) {
 					c3=cbind(udata$nodename.mem_free$Result)/(1024*1024)
 					c4=cbind(rep(i, length(udata$nodename.node)))
 					c5=cbind(rep(testname, length(udata$nodename.node)))
-					# declare formated utility data
+					# FIXME figure out how to add schedule here ###
+					# then add to cdata below as well ###
+					# then update calculations to exclude schedule=false ###
+
+					# declare formatted utility data
 					fudata=cbind(c1,c2,c3,c4,c5)
 				}
 				else {
@@ -87,15 +91,14 @@ for (currentdir in resultdirs) {
 					# create the new row (which is actually the number of nodes of rows)
 					frow=cbind(c1,c2,c3,c4,c5)
 					fudata=rbind(fudata,frow)
-
 				}
 			}
 			colnames(fudata)=c("node", "cpu_idle", "mem_free", "pod", "testname")
-			# fudata is considered a vector for some reason so converting it to a data.frame	
+			# fudata is considered a vector for some reason so converting it to a data.frame
 			fudata=as.data.frame(fudata)
 			# get unique node names
 			nodes=unique(fudata$node)
-			
+
 
 			for (nodename in nodes) {
 				c1=cbind(subset(fudata,node==nodename)["mem_free"])
@@ -107,7 +110,7 @@ for (currentdir in resultdirs) {
 				colnames(c2)=paste(nodename,"_cpu_idle", sep="")
 				cdata=cbind(cdata, c2)
 			}
-			
+
 			# convert ms to seconds
 			# FIXME - we should seq from 0 index
 			if (length(cdata[, "boot_time"]) > 20) {
@@ -187,10 +190,9 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 
 # plot how samples varied over	'time'
 mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
-							as.numeric(as.character(mem_free)),
-							colour=interaction(testname, node), group=interaction(testname, node))) +
+		as.numeric(as.character(mem_free)),
+		colour=testname, group=interaction(testname, node))) +
 	geom_line(alpha=0.2) +
-	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma) +
@@ -201,20 +203,16 @@ mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 # If we only have relatively few samples, add points to the plot. Otherwise, skip as
 # the plot becomes far too noisy
 if ( skip_points == 0 ) {
-	mem_line_plot = mem_line_plot + geom_point(alpha=0.3)
+	mem_line_plot = mem_line_plot + geom_point(aes(shape=node), alpha=0.3)
 }
 
-cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats),
-	theme=ttheme(base_size=10),
-	rows=NULL
-	))
+cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats), theme=ttheme(base_size=10), rows=NULL))
 
-# plot how samples varied over	'time'
+# plot how samples varied over 'time'
 cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
-							as.numeric(as.character(cpu_idle)),
-							colour=interaction(testname, node), group=interaction(testname, node))) +
+		as.numeric(as.character(cpu_idle)),
+		colour=testname, group=interaction(testname, node))) +
 	geom_line(alpha=0.2) +
-	geom_smooth(se=FALSE, method="loess", size=0.3) +
 	xlab("Pods") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
@@ -222,7 +220,7 @@ cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 	theme(axis.text.x=element_text(angle=90))
 
 if ( skip_points == 0 ) {
-	cpu_line_plot = cpu_line_plot + geom_point(alpha=0.3)
+	cpu_line_plot = cpu_line_plot + geom_point(aes(shape=node), alpha=0.3)
 }
 
 # Show how boot time changed
@@ -256,5 +254,5 @@ master_plot = grid.arrange(
 	cpu_text.p,
 	boot_line_plot,
 	nrow=7,
-	heights=c(1, 1, 0.8, 0.1, 0.8, 0.1, 1) )
+	heights=c(1.5, 1.5, 0.8, 0.1, 0.8, 0.1, 1.2) )
 
