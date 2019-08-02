@@ -11,6 +11,11 @@ spec:
       labels:
         name: stats-pods
     spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      terminationGracePeriodSeconds: 0
       containers:
         - name: stats
           image: busybox
