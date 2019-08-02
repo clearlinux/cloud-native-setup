@@ -35,6 +35,8 @@ grace=${grace:-30}
 TEST_ARGS="runtime=${RUNTIME}"
 TEST_NAME="k8s scaling"
 
+declare -a new_pods
+
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
 grab_stats() {
@@ -62,6 +64,7 @@ EOF
 	)"
 	metrics_json_add_array_fragment "$launch_json"
 
+	# start the node utilization array
 	metrics_json_start_nested_array
 
 	# grab pods in the stats daemonset
@@ -110,6 +113,39 @@ EOF
 	done 3< <(kubectl get pods --selector name=stats-pods -o json | jq -r '.items[] | "\(.metadata.name) \(.spec.nodeName)"')
 
 	metrics_json_end_nested_array "node_util"
+
+	# start the new pods array
+	metrics_json_start_nested_array
+
+	# for the first call to grab stats, there are no new pods
+	# so we need to fill in with NA (R specific value) in matching
+		# diminsion to the rest of the calls to grab_stats, so $STEP items	
+	if [[ ${#new_pods[@]} == 0 ]]; then
+		for i in $STEP; do
+			local new_pod_json="$(cat << EOF
+						{
+								"pod_name": "NA",
+								"node": "NA"
+						}
+EOF
+			)"
+			metrics_json_add_nested_array_element "$new_pod_json"
+		done
+	else
+	local maxelem=$(( ${#new_pods[@]} - 1 ))
+		for index in $(seq 0 $maxelem); do
+			local node=$(kubectl get pod ${new_pods[$index]} -o json | jq -r '"\(.spec.nodeName)"')
+			local new_pod_json="$(cat << EOF
+				{
+					"pod_name": "${new_pods[$index]}",
+					"node": "${node}"
+				}
+EOF
+			)"
+			metrics_json_add_nested_array_element "$new_pod_json"
+		done
+	fi
+	metrics_json_end_nested_array "launched_pods"
 
 	metrics_json_close_array_element
 }
@@ -203,6 +239,9 @@ run() {
 			-e "s|@GRACE@|${grace}|g" \
 			< ${input_template} > ${generated_file}
 
+		# get list of workload pods before launching another one
+		local pods_before=$(kubectl get pods --selector ${LABEL}=${LABELVALUE} -o json | jq -r '.items[] | "\(.metadata.name)"')
+
 		info "Applying changes"
 		local start_time=$(date +%s%N)
 		if [ "$use_api" != "no" ]; then
@@ -221,10 +260,35 @@ run() {
 		local end_time=$(date +%s%N)
 		local total_milliseconds=$(( (end_time - start_time) / 1000000 ))
 		info "Took $total_milliseconds ms ($end_time - $start_time)"
+
+		# grab list of workload pods after
+		local pods_after=$(kubectl get pods --selector ${LABEL}=${LABELVALUE} -o json | jq -r '.items[] | "\(.metadata.name)"')
+		find_unique_pods "${pods_after}" "${pods_before}"
+
 		sleep ${settle_time}
 		grab_stats $total_milliseconds $reqs
 	done
 }
+
+# finds elements in $1 that are not in $2
+find_unique_pods() {
+	local list_a=$1
+	local list_b=$2
+
+	new_pods=()
+	for a in $list_a; do
+			local in_b=false
+				for b in $list_b; do
+					if [[ $a == $b ]]; then
+							in_b=true
+								break
+						fi
+				done
+				if [[ $in_b == false ]]; then
+					new_pods[${#new_pods[@]}]=$a
+				fi
+		done
+}	
 
 cleanup() {
 	info "Cleaning up"
