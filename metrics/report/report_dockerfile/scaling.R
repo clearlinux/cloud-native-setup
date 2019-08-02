@@ -19,6 +19,7 @@ testnames=c(
 
 data=c()
 fndata=c()
+pndata=c()
 stats=c()
 rstats=c()
 rstats_names=c()
@@ -118,9 +119,39 @@ for (currentdir in resultdirs) {
 				skip_points=1
 			}
 
+			# format the pod data from 2 nested columns in a series
+			# of index specific columns to just 2 columns
+			pdata=data.frame(fdata$BootResults$launched_pods)
+			pudata=c()
+			for (i in seq(length(cdata[, "boot_time"]))) {
+				if (i == 1) {
+					# there are no valid values for this index, skipping
+					next
+				}
+				else {
+					# shift to 0 based indexing
+					index=i-1
+					sindex=(index*2)+1
+					eindex=sindex+1
+					row=cbind(pdata[,sindex:eindex])
+					c1=cbind(podname=row[,1])
+					c2=cbind(node=row[,2])
+					c3=cbind(count=rep(i, length(pdata$pod_name)))
+					c4=cbind(boot_time=rep(cdata[, "boot_time"][i],length(pdata$pod_name)))
+					c5=cbind(dataset=rep(testname, length(pdata$pod_name)))
+					prow=cbind(c1,c2,c3,c4,c5)
+					pudata=rbind(pudata,prow)
+				}
+			}
+			# pndata is considered a vector for some reason so converting it to a data.frame
+			pudata=as.data.frame(pudata)
+			pudata$count=as.numeric(as.character(pudata$count))
+			pudata$boot_time=as.numeric(as.character(pudata$boot_time))
+			
 			cdata=cbind(cdata, count=seq_len(length(cdata[, "boot_time"])))
 			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "boot_time"]) ))
 			cdata=cbind(cdata, dataset=rep(datasetname, length(cdata[, "boot_time"]) ))
+			#cdata=cbind(cdata, pndata)
 
 			# Gather our statistics
 			# '-1' containers, as the first entry should be a data capture of before
@@ -156,6 +187,7 @@ for (currentdir in resultdirs) {
 			# Store away as a single set
 			data=rbind(data, cdata)
 			fndata=rbind(fndata, fudata)
+			pndata=rbind(pndata, pudata)
 			stats=rbind(stats, sdata)
 
 			ms = c(
@@ -193,7 +225,7 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 	rows=NULL
 	))
 
-# plot how samples varied over	'time'
+# plot how samples varied over 'time'
 mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 		as.numeric(as.character(mem_free)),
 		colour=testname, group=interaction(testname, node))) +
@@ -231,7 +263,6 @@ if ( skip_points == 0 ) {
 # Show how boot time changed
 boot_line_plot <- ggplot() +
 	geom_line( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.2) +
-	geom_smooth( data=data, aes(count, boot_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
@@ -239,7 +270,7 @@ boot_line_plot <- ggplot() +
 	theme(axis.text.x=element_text(angle=90))
 
 if ( skip_points == 0 ) {
-	boot_line_plot = boot_line_plot + geom_point( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.3)
+	boot_line_plot = boot_line_plot + geom_point( data=pndata, aes(count, boot_time, shape=node, group=dataset), alpha=0.3)
 }
 
 mem_text <- paste("Footprint density statistics")
