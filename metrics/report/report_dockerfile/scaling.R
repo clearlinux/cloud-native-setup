@@ -151,7 +151,6 @@ for (currentdir in resultdirs) {
 			cdata=cbind(cdata, count=seq_len(length(cdata[, "boot_time"])))
 			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "boot_time"]) ))
 			cdata=cbind(cdata, dataset=rep(datasetname, length(cdata[, "boot_time"]) ))
-			#cdata=cbind(cdata, pndata)
 
 			# Gather our statistics
 			# '-1' containers, as the first entry should be a data capture of before
