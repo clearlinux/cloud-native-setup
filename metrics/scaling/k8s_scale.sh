@@ -119,7 +119,7 @@ EOF
 
 	# for the first call to grab stats, there are no new pods
 	# so we need to fill in with NA (R specific value) in matching
-		# diminsion to the rest of the calls to grab_stats, so $STEP items	
+	# dimension to the rest of the calls to grab_stats, so $STEP items
 	if [[ ${#new_pods[@]} == 0 ]]; then
 		for i in $STEP; do
 			local new_pod_json="$(cat << EOF
@@ -132,7 +132,7 @@ EOF
 			metrics_json_add_nested_array_element "$new_pod_json"
 		done
 	else
-	local maxelem=$(( ${#new_pods[@]} - 1 ))
+	    local maxelem=$(( ${#new_pods[@]} - 1 ))
 		for index in $(seq 0 $maxelem); do
 			local node=$(kubectl get pod ${new_pods[$index]} -o json | jq -r '"\(.spec.nodeName)"')
 			local new_pod_json="$(cat << EOF
