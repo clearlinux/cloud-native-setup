@@ -26,8 +26,6 @@ rstats_names=c()
 cstats=c()
 cstats_names=c()
 
-skip_points=0	# Shall we draw the points as well as lines on the graphs.
-
 # FIXME GRAHAM - bomb if there are no source dirs?!
 
 for (currentdir in resultdirs) {
@@ -111,12 +109,6 @@ for (currentdir in resultdirs) {
 				c3=cbind(subset(fudata,node==nodename)["cpu_idle"])
 				colnames(c3)=paste(nodename,"_cpu_idle", sep="")
 				cdata=cbind(cdata, c3)
-			}
-
-			# convert ms to seconds
-			# FIXME - we should seq from 0 index
-			if (length(cdata[, "boot_time"]) > 20) {
-				skip_points=1
 			}
 
 			# format the pod data from 2 nested columns in a series
@@ -218,6 +210,9 @@ for (currentdir in resultdirs) {
 colnames(rstats)=c("Test", "n", "Tot_Gb", "avg_Gb", "n_per_Gb")
 colnames(cstats)=c("Test", "n", "Tot_CPU", "avg_CPU")
 
+num_test_runs=length(unique(fndata$testname))
+colour_label=(if(num_test_runs > 1) "testname" else "node")
+
 # Build us a text table of numerical results
 mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 	theme=ttheme(base_size=10),
@@ -227,50 +222,43 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 # plot how samples varied over 'time'
 mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 		as.numeric(as.character(mem_free)),
-		colour=testname, group=interaction(testname, node))) +
+		colour=(if (num_test_runs > 1) testname else node),
+	       	group=interaction(testname, node))) +
+	labs(colour=colour_label) +
 	geom_line(alpha=0.2) +
-	xlab("Pods") +
+	geom_point(aes(shape=node), alpha=0.3, size=0.5) +
+	xlab("pods") +
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma) +
 	ggtitle("System Memory free") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
-# If we only have relatively few samples, add points to the plot. Otherwise, skip as
-# the plot becomes far too noisy
-if ( skip_points == 0 ) {
-	mem_line_plot = mem_line_plot + geom_point(aes(shape=node), alpha=0.3)
-}
-
 cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats), theme=ttheme(base_size=10), rows=NULL))
 
 # plot how samples varied over 'time'
 cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 		as.numeric(as.character(cpu_idle)),
-		colour=testname, group=interaction(testname, node))) +
+		colour=(if (num_test_runs > 1) testname else node),
+	       	group=interaction(testname, node))) +
+	labs(colour=colour_label) +
 	geom_line(alpha=0.2) +
-	xlab("Pods") +
+	geom_point(aes(shape=node), alpha=0.3, size=0.5) +
+	xlab("pods") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
-if ( skip_points == 0 ) {
-	cpu_line_plot = cpu_line_plot + geom_point(aes(shape=node), alpha=0.3)
-}
-
 # Show how boot time changed
 boot_line_plot <- ggplot() +
 	geom_line( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.2) +
+	geom_point( data=pndata, aes(count, boot_time, colour=interaction(dataset, node), group=dataset), alpha=0.6, size=0.6, stroke=0, shape=16) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
-
-if ( skip_points == 0 ) {
-	boot_line_plot = boot_line_plot + geom_point( data=pndata, aes(count, boot_time, shape=node, group=dataset), alpha=0.3)
-}
 
 mem_text <- paste("Footprint density statistics")
 mem_text.p <- ggparagraph(text=mem_text, face="italic", size="10", color="black")
@@ -282,12 +270,9 @@ cpu_text.p <- ggparagraph(text=cpu_text, face="italic", size="10", color="black"
 # excellent examples
 master_plot = grid.arrange(
 	mem_line_plot,
-	cpu_line_plot,
 	mem_stats_plot,
-	mem_text.p,
+	cpu_line_plot,
 	cpu_stats_plot,
-	cpu_text.p,
 	boot_line_plot,
-	nrow=7,
-	heights=c(1.5, 1.5, 0.8, 0.1, 0.8, 0.1, 1.2) )
+	heights=c(1.5, 0.5, 1.5, 0.5, 1.5))
 
