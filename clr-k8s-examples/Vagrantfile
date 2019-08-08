@@ -60,7 +60,7 @@ Vagrant.configure("2") do |config|
   end
 
   $hosts.each do |vm_name, ip|
-    proxy_ip_list = ("#{proxy_ip_list},#{vm_name},#{ip}")
+    $proxy_ip_list = ("#{$proxy_ip_list},#{vm_name},#{ip}")
   end
 
   $hosts.each do |vm_name, ip|
@@ -81,7 +81,7 @@ Vagrant.configure("2") do |config|
         if Vagrant.has_plugin?("vagrant-proxyconf")
           c.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
           c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
-          c.proxy.no_proxy =  (ENV['no_proxy']+"#{proxy_ip_list}" || ENV['NO_PROXY']+"#{proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{proxy_ip_list}")
+          c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}" || ENV['NO_PROXY']+"#{$proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{$proxy_ip_list}")
         end
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh", env: {"RUNNER" => $runner}
