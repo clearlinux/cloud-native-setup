@@ -6,3 +6,6 @@ resources:
 
 patchesStrategicMerge:
   - patch_operator.yaml
+  # patches rook to use 'directories' instead of partitions.
+  # comment out to use partitions
+  - patch_cephcluster.yaml
