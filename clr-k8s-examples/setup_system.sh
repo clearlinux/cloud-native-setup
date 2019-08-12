@@ -49,7 +49,7 @@ sudo systemctl daemon-reload
 # This will fail at this point, but puts it into a retry loop that
 # will therefore startup later once we have configured with kubeadm.
 echo "The following kubelet command may complain... it is not an error"
-sudo systemctl enable --now kubelet $RUNNER || true
+sudo systemctl enable kubelet $RUNNER || true
 
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
@@ -84,4 +84,3 @@ set -o nounset
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
 sudo systemctl restart $RUNNER || true
-sudo systemctl restart kubelet || true
