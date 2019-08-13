@@ -32,9 +32,11 @@ Note, vagrant installation steps were derived from:
 
 On Clear Linux, run these commands
 ```bash
-sudo wget https://github.com/AntonioMeireles/ClearLinux-packer/blob/master/extras/clearlinux/setup/libvirtd.sh
+sudo wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/libvirtd.sh
+chmod +x libvirtd.sh
 ./libvirtd.sh
 sudo wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/vagrant.sh
+chmod +x vagrant.sh
 ./vagrant.sh
 ```
 Check if vagrant is installed successfully
