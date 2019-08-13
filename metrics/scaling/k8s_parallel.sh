@@ -29,6 +29,7 @@ LABELVALUE=${LABELVALUE:-parallel}
 wait_time=${wait_time:-30}
 delete_wait_time=${delete_wait_time:-600}
 use_api=${use_api:-yes}
+grace=${grace:-30}
 
 # Set some default metrics env vars
 TEST_ARGS="runtime=${RUNTIME}"
@@ -78,6 +79,7 @@ warmup() {
 		-e "s|@DEPLOYMENT@|${deployment}|g" \
 		-e "s|@LABEL@|${LABEL}|g" \
 		-e "s|@LABELVALUE@|${LABELVALUE}|g" \
+		-e "s|@GRACE@|${grace}|g" \
 		< ${input_yaml} > ${generated_yaml}
 
 	info "Applying warmup pod"
@@ -191,6 +193,7 @@ run() {
 			-e "s|@DEPLOYMENT@|${deployment}|g" \
 			-e "s|@LABEL@|${LABEL}|g" \
 			-e "s|@LABELVALUE@|${LABELVALUE}|g" \
+			-e "s|@GRACE@|${grace}|g" \
 			< ${input_template} > ${generated_file}
 
 		info "Applying changes"
@@ -248,6 +251,8 @@ show_vars()
 	echo -e "\t\tSeconds to wait after pods ready before taking measurements"
 	echo -e "\tuse_api (${use_api})"
 	echo -e "\t\tspecify yes or no to use the API to launch pods"
+	echo -e "\tgrace (${grace})"
+	echo -e "\t\tspecify the grace period in seconds for workload pod termination"
 }
 
 help()
