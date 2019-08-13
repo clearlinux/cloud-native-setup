@@ -141,7 +141,7 @@ EOF
 			metrics_json_add_nested_array_element "$new_pod_json"
 		done
 	else
-	    local maxelem=$(( ${#new_pods[@]} - 1 ))
+		local maxelem=$(( ${#new_pods[@]} - 1 ))
 		for index in $(seq 0 $maxelem); do
 			local node=$(kubectl get pod ${new_pods[$index]} -o json | jq -r '"\(.spec.nodeName)"')
 			local new_pod_json="$(cat << EOF
