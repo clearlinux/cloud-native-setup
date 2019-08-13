@@ -69,7 +69,7 @@ EOF
 
 	local json="$(cat << EOF
 	"test" : {
-		"runtime": "${RUNTIME}",
+		"runtime": "${RUNTIME:-default}",
 		"testname": "${TEST_NAME}"
 	}
 EOF
