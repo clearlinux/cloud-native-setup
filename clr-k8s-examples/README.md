@@ -9,9 +9,9 @@ To be able to test this tool, you can create a 3-node vagrant setup. In this tut
 
 ## Install vagrant
 
-Follow instructions here [Vagrant docs](https://www.vagrantup.com/intro/getting-started/install.html#installing-vagrant)
+Follow instructions in the [Vagrant docs](https://www.vagrantup.com/intro/getting-started/install.html#installing-vagrant)
 
-Or, find detailed steps here [Detailed steps](vagrant.md)
+Or, follow our [detailed steps](vagrant.md)
 
 Now you have a 3 node cluster up and running. Each of them have 2 vCPU, 4GB Memory, 2x10GB disks, 1 additional private network.
 Customize the setup using environment variables. E.g., `NODES=1 MEMORY=8192 CPUS=8 vagrant up --provider=libvirt`
@@ -22,12 +22,6 @@ To login to the master node and change to this directory
 vagrant ssh clr-01
 cd clr-k8s-examples
 ```
-
-Note, vagrant installation steps were derived from:
-* https://computingforgeeks.com/install-kvm-centos-rhel-ubuntu-debian-sles-arch/
-* https://computingforgeeks.com/using-vagrant-with-libvirt-on-linux/
-* https://computingforgeeks.com/install-latest-vagrant-on-ubuntu-18-04-debian-9-kali-linux/
-* https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/README.md
 
 ## Setup the nodes in the cluster
 
