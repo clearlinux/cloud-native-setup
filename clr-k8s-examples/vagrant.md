@@ -27,3 +27,21 @@ Note, vagrant installation steps were derived from:
 * https://computingforgeeks.com/using-vagrant-with-libvirt-on-linux/
 * https://computingforgeeks.com/install-latest-vagrant-on-ubuntu-18-04-debian-9-kali-linux/
 * https://github.com/vagrant-libvirt/vagrant-libvirt/blob/master/README.md
+
+## Install vagrant on Clear Linux
+
+On Clear Linux, run these commands
+```bash
+sudo wget https://github.com/AntonioMeireles/ClearLinux-packer/b    lob/master/extras/clearlinux/setup/libvirtd.sh
+./libvirtd.sh
+sudo wget https://raw.githubusercontent.com/AntonioMeireles/Clea    rLinux-packer/master/extras/clearlinux/setup/vagrant.sh
+./vagrant.sh
+```
+Check if vagrant is installed successfully
+```bash
+vagrant --version
+```
+Run vagrant
+```bash
+vagrant up --provider=libvirt
+```
