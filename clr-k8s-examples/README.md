@@ -7,28 +7,11 @@ This setup currently will work with k8s 1.14 & above. Any version of k8s before 
 
 To be able to test this tool, you can create a 3-node vagrant setup. In this tutorial, we will talk about using [libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), but you can use any hypervisor that you are familiar with.
 
-## Install vagrant on Ubuntu
+## Install vagrant
 
-On Ubuntu Bionic, run these commands
-Install dependencies and prepare system
-```bash
-sudo apt-get update
-sudo apt-get install gcc make
-sudo apt-get install qemu qemu-kvm libvirt-bin ebtables dnsmasq-base virt-top  libguestfs-tools virtinst bridge-utils
-sudo apt-get install libxslt-dev libxml2-dev libvirt-dev zlib1g-dev ruby-dev
-sudo modprobe vhost_net
-sudo lsmod | grep vhost
-echo "vhost_net" | sudo tee -a /etc/modules
-```
-Download the latest Debian package from https://www.vagrantup.com/downloads.html and install it followed by vagrant-libvirt
-```bash
-sudo dpkg -i vagrant_${VER}_x86_64.deb
-sudo vagrant plugin install vagrant-libvirt
-```
-Run vagrant
-```bash
-sudo vagrant up --provider=libvirt
-```
+Follow instructions here [Vagrant docs](https://www.vagrantup.com/intro/getting-started/install.html#installing-vagrant)
+
+Or, find detailed steps here [Detailed steps](vagrant.md)
 
 Now you have a 3 node cluster up and running. Each of them have 2 vCPU, 4GB Memory, 2x10GB disks, 1 additional private network.
 Customize the setup using environment variables. E.g., `NODES=1 MEMORY=8192 CPUS=8 vagrant up --provider=libvirt`
