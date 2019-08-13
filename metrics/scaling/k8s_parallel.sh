@@ -102,6 +102,10 @@ save_stats() {
 
 	local json="$(cat << EOF
 	{
+		"date": {
+			"ns": $(date +%s%N),
+			"Date": "$(date -u +"%Y-%m-%dT%T.%3N")"
+		},
 		"n_pods": {
 			"Result": ${n_pods},
 			"Units" : "int"
