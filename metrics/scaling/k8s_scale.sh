@@ -46,6 +46,15 @@ grab_stats() {
 	local mem_free=()
 	info "And grab some stats"
 
+	local date_json="$(cat << EOF
+			"date": {
+				"ns": $(date +%s%N),
+				"Date": "$(date -u +"%Y-%m-%dT%T.%3N")"
+			}
+EOF
+	)"
+	metrics_json_add_array_fragment "$date_json"
+
 	local pods_json="$(cat << EOF
 			"n_pods": {
 				"Result": ${n_pods},
@@ -132,7 +141,7 @@ EOF
 			metrics_json_add_nested_array_element "$new_pod_json"
 		done
 	else
-	    local maxelem=$(( ${#new_pods[@]} - 1 ))
+		local maxelem=$(( ${#new_pods[@]} - 1 ))
 		for index in $(seq 0 $maxelem); do
 			local node=$(kubectl get pod ${new_pods[$index]} -o json | jq -r '"\(.spec.nodeName)"')
 			local new_pod_json="$(cat << EOF

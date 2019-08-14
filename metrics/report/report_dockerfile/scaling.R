@@ -57,24 +57,27 @@ for (currentdir in resultdirs) {
 			testname=datasetname
 
 			cdata=data.frame(boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
+			cdata=cbind(cdata, num_pods=as.numeric(fdata$BootResults$n_pods$Result))
 
 			# format the utilization data
 			udata=data.frame(nodename=fdata$BootResults$node_util)
 			for (i in seq(length(cdata[, "boot_time"]))) {
+				num_pods=fdata$BootResults$n_pods$Result[i]
+				index=i-1
 				if (i == 1) {
 					# first iteration provide column name for c1
 					c1=cbind(node=udata$nodename.node)
-					c2=cbind(udata$nodename.noschedule)
-					c3=cbind(udata$nodename.cpu_idle$Result)
-					c4=cbind(udata$nodename.mem_free$Result)/(1024*1024)
-					c5=cbind(rep(i, length(udata$nodename.node)))
-					c6=cbind(rep(testname, length(udata$nodename.node)))
+					c2=cbind(noschedule=udata$nodename.noschedule)
+					c3=cbind(cpu_idle=udata$nodename.cpu_idle$Result)
+					c4=cbind(mem_free=udata$nodename.mem_free$Result)/(1024*1024)
+					# using index to make chart start with 0 rather than 1
+					c5=cbind(pod=rep(num_pods, length(udata$nodename.node)))
+					c6=cbind(testname=rep(testname, length(udata$nodename.node)))
 					# declare formatted utility data
 					fudata=cbind(c1,c2,c3,c4,c5,c6)
 				}
 				else {
 					# shift to 0 based indexing
-					index=i-1
 					sindex=(index*4)+1
 					eindex=sindex+3
 					# grab 3 columns for next row bind
@@ -83,14 +86,14 @@ for (currentdir in resultdirs) {
 					c2=cbind(row[,2])
 					c3=cbind(row[,3]$Result)
 					c4=cbind(row[,4]$Result)/(1024*1024)
-					c5=cbind(rep(i, length(udata$nodename.node)))
+					# using index to make chart start with 0 rather than 1
+					c5=cbind(rep(num_pods, length(udata$nodename.node)))
 					c6=cbind(rep(testname, length(udata$nodename.node)))
 					# create the new row (which is actually the number of nodes of rows)
 					frow=cbind(c1,c2,c3,c4,c5,c6)
 					fudata=rbind(fudata,frow)
 				}
 			}
-			colnames(fudata)=c("node", "noschedule", "cpu_idle", "mem_free", "pod", "testname")
 			# fudata is considered a vector for some reason so converting it to a data.frame
 			fudata=as.data.frame(fudata)
 			# get unique node names
@@ -113,44 +116,43 @@ for (currentdir in resultdirs) {
 
 			# format the pod data from 2 nested columns in a series
 			# of index specific columns to just 2 columns
-			pdata=data.frame(fdata$BootResults$launched_pods)
+			# omitting the first row as it is the baseline and contains
+			# NA values for launched pods as there were none. If we don't
+			# omit the first row, this will throw a warning, but notice that it
+			# makes the index funky below
+			pdata=data.frame(fdata$BootResults$launched_pods[-1])
 			pudata=c()
-			for (i in seq(length(cdata[, "boot_time"]))) {
-				if (i == 1) {
-					# there are no valid values for this index, skipping
-					next
-				}
-				else {
-					# shift to 0 based indexing
-					index=i-1
-					sindex=(index*2)+1
-					eindex=sindex+1
-					row=cbind(pdata[,sindex:eindex])
-					c1=cbind(podname=row[,1])
-					c2=cbind(node=row[,2])
-					c3=cbind(count=rep(i, length(pdata$pod_name)))
-					c4=cbind(boot_time=rep(cdata[, "boot_time"][i],length(pdata$pod_name)))
-					c5=cbind(dataset=rep(testname, length(pdata$pod_name)))
-					prow=cbind(c1,c2,c3,c4,c5)
-					pudata=rbind(pudata,prow)
-				}
+			# pdata is 1 row shorter than cdata, hence the subtract 1
+			for (i in seq(length(cdata[, "boot_time"]) - 1)) {
+				# using i+1 rather than i to account for the missing row when indexing in to fdata
+				num_pods=fdata$BootResults$n_pods$Result[i+1]
+				# shift to 0 based indexing for pdata, so we can iterate through the generated named columns
+				index=i-1
+				sindex=(index*2)+1
+				eindex=sindex+1
+				row=cbind(pdata[,sindex:eindex])
+				c1=cbind(podname=row[,1])
+				c2=cbind(node=row[,2])
+				c3=cbind(count=rep(num_pods, length(pdata$pod_name)))
+				# using i+1 rather than i to account for the missing row when indexing in to cdata
+				c4=cbind(boot_time=rep(cdata[, "boot_time"][i+1],length(pdata$pod_name)))
+				c5=cbind(dataset=rep(testname, length(pdata$pod_name)))
+				prow=cbind(c1,c2,c3,c4,c5)
+				pudata=rbind(pudata,prow)
 			}
 			# pndata is considered a vector for some reason so converting it to a data.frame
 			pudata=as.data.frame(pudata)
 			pudata$count=as.numeric(as.character(pudata$count))
 			pudata$boot_time=as.numeric(as.character(pudata$boot_time))
 			
-			cdata=cbind(cdata, count=seq_len(length(cdata[, "boot_time"])))
+			# using 0 based index rather than starting with 1
 			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "boot_time"]) ))
 			cdata=cbind(cdata, dataset=rep(datasetname, length(cdata[, "boot_time"]) ))
 
 			# Gather our statistics
 			# '-1' containers, as the first entry should be a data capture of before
 			# the first container was run.
-			# FIXME - once the test starts to store a stats baseline in slot 0, then
-			# we should re-enable the '-1'
-			#sdata=data.frame(num_containers=length(cdata[, "avail_gb"])-1)
-			sdata=data.frame(num_containers=length(cdata[, "boot_time"]))
+			sdata=data.frame(num_pods=as.numeric(as.character(cdata[, "num_pods"][length(cdata[, "num_pods"])])))
 			sudata=c()
 			# first (which should be 0-containers)
 			for (nodename in nodes) {
@@ -169,10 +171,13 @@ for (currentdir in resultdirs) {
 							 as.numeric(as.character(cdata[, node_cpu_idle][length(cdata[, node_cpu_idle])])))
 				sudata=rbind(sudata, srdata)
 			}
+
+			# now that we have sudata, perform the calculations
+			total_pods=as.numeric(as.character(cdata[, "num_pods"][length(cdata[, "num_pods"])]))
 			sdata=cbind(sdata, mem_consumed=sum(sudata[, "mem_consumed"]))
 			sdata=cbind(sdata, cpu_consumed=sum(sudata[, "cpu_consumed"]))
 			sdata=cbind(sdata, boot_time=cdata[, "boot_time"][length(cdata[, "boot_time"])])
-			sdata=cbind(sdata, avg_gb_per_c=sdata$mem_consumed / sdata$num_containers)
+			sdata=cbind(sdata, avg_gb_per_c=sdata$mem_consumed / total_pods)
 			sdata=cbind(sdata, runtime=testname)
 
 			# Store away as a single set
@@ -183,7 +188,7 @@ for (currentdir in resultdirs) {
 
 			ms = c(
 				"Test"=testname,
-				"n"=sdata$num_containers,
+				"n"=total_pods,
 				"size"=round((sdata$mem_consumed), 3),
 				"gb/n"=round(sdata$avg_gb_per_c, digits=4),
 				"n/Gb"= round(1 / sdata$avg_gb_per_c, digits=2)
@@ -191,9 +196,9 @@ for (currentdir in resultdirs) {
 
 			cs = c(
 				"Test"=testname,
-				"n"=sdata$num_containers,
+				"n"=total_pods,
 				"cpu"=round(sdata$cpu_consumed, digits=3),
-				"cpu/n"=round((sdata$cpu_consumed / sdata$num_containers), digits=4)
+				"cpu/n"=round((sdata$cpu_consumed / num_pods), digits=4)
 			)
 
 			rstats=rbind(rstats, ms)
@@ -223,7 +228,7 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(rstats),
 mem_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 		as.numeric(as.character(mem_free)),
 		colour=(if (num_test_runs > 1) testname else node),
-	       	group=interaction(testname, node))) +
+		group=interaction(testname, node))) +
 	labs(colour=colour_label) +
 	geom_line(alpha=0.2) +
 	geom_point(aes(shape=node), alpha=0.3, size=0.5) +
@@ -240,7 +245,7 @@ cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cstats), theme=ttheme(b
 cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 		as.numeric(as.character(cpu_idle)),
 		colour=(if (num_test_runs > 1) testname else node),
-	       	group=interaction(testname, node))) +
+		group=interaction(testname, node))) +
 	labs(colour=colour_label) +
 	geom_line(alpha=0.2) +
 	geom_point(aes(shape=node), alpha=0.3, size=0.5) +
@@ -252,7 +257,7 @@ cpu_line_plot <- ggplot(data=fndata, aes(as.numeric(as.character(pod)),
 
 # Show how boot time changed
 boot_line_plot <- ggplot() +
-	geom_line( data=data, aes(count, boot_time, colour=testname, group=dataset), alpha=0.2) +
+	geom_line( data=data, aes(num_pods, boot_time, colour=testname, group=dataset), alpha=0.2) +
 	geom_point( data=pndata, aes(count, boot_time, colour=interaction(dataset, node), group=dataset), alpha=0.6, size=0.6, stroke=0, shape=16) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
