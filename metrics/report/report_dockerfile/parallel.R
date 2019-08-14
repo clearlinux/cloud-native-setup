@@ -76,8 +76,8 @@ for (currentdir in resultdirs) {
 }
 
 # Show how boot time changed
-boot_line_plot <- ggplot() +
-	geom_line( data=data, aes(npod, boot_time, colour=testname, group=dataset), alpha=0.2) +
+boot_line_plot <- ggplot( data=data, aes(npod, boot_time, colour=testname, group=dataset)) +
+	geom_line( alpha=0.2) +
 	xlab("parallel pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time (detail)") +
@@ -85,9 +85,9 @@ boot_line_plot <- ggplot() +
 	theme(axis.text.x=element_text(angle=90))
 
 	if ( skip_points_enable_smooth == 0 ) {
-		boot_line_plot = boot_line_plot + geom_point( data=data, aes(npod, boot_time, colour=testname, group=dataset), alpha=0.3)
+		boot_line_plot = boot_line_plot + geom_point(alpha=0.3)
 	} else {
-		boot_line_plot = bool_line_plot + geom_smooth( data=data, aes(npod, boot_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3)
+		boot_line_plot = bool_line_plot + geom_smooth(se=FALSE, method="loess", size=0.3)
 	}
 
 	# And get a zero Y index plot.
@@ -95,8 +95,8 @@ boot_line_plot <- ggplot() +
 		ggtitle("Pod boot time (0 index)")
 
 # Show how boot time changed
-delete_line_plot <- ggplot() +
-	geom_line( data=data, aes(npod, delete_time, colour=testname, group=dataset), alpha=0.2) +
+delete_line_plot <- ggplot( data=data, aes(npod, delete_time, colour=testname, group=dataset)) +
+	geom_line(alpha=0.2) +
 	xlab("parallel pods") +
 	ylab("Delete time (s)") +
 	ggtitle("Pod deletion time (detail)") +
@@ -104,9 +104,9 @@ delete_line_plot <- ggplot() +
 	theme(axis.text.x=element_text(angle=90))
 
 	if ( skip_points_enable_smooth == 0 ) {
-		delete_line_plot = delete_line_plot + geom_point( data=data, aes(npod, delete_time, colour=testname, group=dataset), alpha=0.3)
+		delete_line_plot = delete_line_plot + geom_point(alpha=0.3)
 	} else {
-		delete_line_plot = delete_line_plot + geom_smooth( data=data, aes(npod, delete_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3)
+		delete_line_plot = delete_line_plot + geom_smooth(se=FALSE, method="loess", size=0.3)
 	}
 
 	# And get a 0 indexed Y axis plot
