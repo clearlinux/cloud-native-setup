@@ -24,7 +24,7 @@ rstats_names=c()
 cstats=c()
 cstats_names=c()
 
-skip_points=0	# Should we draw the points as well as lines on the graphs.
+skip_points_enable_smooth=0	# Should we draw the points as well as lines on the graphs.
 
 for (currentdir in resultdirs) {
 	dirstats=c()
@@ -60,8 +60,10 @@ for (currentdir in resultdirs) {
 
 			# If we have more than 20 items to draw, then do not draw the points on
 			# the graphs, as they are then too noisy to read.
+			# But, do draw the smoothed lines to help read the now dense and potentially
+			# noisy graphs.
 			if (length(cdata[, "boot_time"]) > 20) {
-				skip_points=1
+				skip_points_enable_smooth=1
 			}
 
 			cdata=cbind(cdata, testname=rep(testname, length(cdata[, "boot_time"]) ))
@@ -76,16 +78,17 @@ for (currentdir in resultdirs) {
 # Show how boot time changed
 boot_line_plot <- ggplot() +
 	geom_line( data=data, aes(npod, boot_time, colour=testname, group=dataset), alpha=0.2) +
-	geom_smooth( data=data, aes(npod, boot_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +
 	xlab("parallel pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time (detail)") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
-if ( skip_points == 0 ) {
-	boot_line_plot = boot_line_plot + geom_point( data=data, aes(npod, boot_time, colour=testname, group=dataset), alpha=0.3)
-}
+	if ( skip_points_enable_smooth == 0 ) {
+		boot_line_plot = boot_line_plot + geom_point( data=data, aes(npod, boot_time, colour=testname, group=dataset), alpha=0.3)
+	} else {
+		boot_line_plot = bool_line_plot + geom_smooth( data=data, aes(npod, boot_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3)
+	}
 
 	# And get a zero Y index plot.
 	boot_line_plot_zero = boot_line_plot + ylim(0, NA) +
@@ -94,16 +97,17 @@ if ( skip_points == 0 ) {
 # Show how boot time changed
 delete_line_plot <- ggplot() +
 	geom_line( data=data, aes(npod, delete_time, colour=testname, group=dataset), alpha=0.2) +
-	geom_smooth( data=data, aes(npod, delete_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3) +
 	xlab("parallel pods") +
 	ylab("Delete time (s)") +
 	ggtitle("Pod deletion time (detail)") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
-if ( skip_points == 0 ) {
-	delete_line_plot = delete_line_plot + geom_point( data=data, aes(npod, delete_time, colour=testname, group=dataset), alpha=0.3)
-}
+	if ( skip_points_enable_smooth == 0 ) {
+		delete_line_plot = delete_line_plot + geom_point( data=data, aes(npod, delete_time, colour=testname, group=dataset), alpha=0.3)
+	} else {
+		delete_line_plot = delete_line_plot + geom_smooth( data=data, aes(npod, delete_time, colour=testname, group=dataset), se=FALSE, method="loess", size=0.3)
+	}
 
 	# And get a 0 indexed Y axis plot
 	delete_line_plot_zero = delete_line_plot + ylim(0, NA) +
