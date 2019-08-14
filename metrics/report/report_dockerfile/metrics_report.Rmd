@@ -49,3 +49,15 @@ are how long it takes for the whole deployment operation to complete.
 ```{r, echo=FALSE, fig.cap="K8S parallel pods"}
 source('parallel.R')
 ```
+
+\pagebreak
+
+# Test setup details
+
+This table describes the test system details, as derived from the information contained
+in the test results files.
+
+
+```{r, echo=FALSE, fig.cap="System configuration details"}
+source('dut-details.R')
+```
