@@ -80,7 +80,7 @@ boot_line_plot <- ggplot( data=data, aes(npod, boot_time, colour=testname, group
 	geom_line( alpha=0.2) +
 	xlab("parallel pods") +
 	ylab("Boot time (s)") +
-	ggtitle("Pod boot time (detail)") +
+	ggtitle("Deployment boot time (detail)") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
@@ -92,14 +92,14 @@ boot_line_plot <- ggplot( data=data, aes(npod, boot_time, colour=testname, group
 
 	# And get a zero Y index plot.
 	boot_line_plot_zero = boot_line_plot + ylim(0, NA) +
-		ggtitle("Pod boot time (0 index)")
+		ggtitle("Deployment boot time (0 index)")
 
 # Show how boot time changed
 delete_line_plot <- ggplot( data=data, aes(npod, delete_time, colour=testname, group=dataset)) +
 	geom_line(alpha=0.2) +
 	xlab("parallel pods") +
 	ylab("Delete time (s)") +
-	ggtitle("Pod deletion time (detail)") +
+	ggtitle("Deployment deletion time (detail)") +
 	#ylim(0, NA) + # For big machines, better to not 0-index
 	theme(axis.text.x=element_text(angle=90))
 
@@ -111,7 +111,7 @@ delete_line_plot <- ggplot( data=data, aes(npod, delete_time, colour=testname, g
 
 	# And get a 0 indexed Y axis plot
 	delete_line_plot_zero = delete_line_plot + ylim(0, NA) +
-		ggtitle("Pod deletion time (0 index)")
+		ggtitle("Deployment deletion time (0 index)")
 
 # See https://www.r-bloggers.com/ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/ for
 # excellent examples
