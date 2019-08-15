@@ -2,5 +2,3 @@ resources:
   - canal/canal.yaml
   - canal/rbac.yaml
 
-patchesStrategicMerge:
-  - patch_daemonset.yaml
