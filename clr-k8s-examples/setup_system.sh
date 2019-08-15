@@ -20,9 +20,20 @@ else
 	echo "Swap not enabled"
 fi
 
+#Ensure 'default' and 'all' rp_filter setting of strict mode (1)
+#Inividual interfaces can still be configured to loose mode (2)
+#However, loose mode is not supported by Project Calico/felix, per
+#https://github.com/projectcalico/felix/issues/2082
+#Alternative is to set loose mode on and set Calico to run anyway as
+#described in the issue above.  However, loose mode is less secure
+#than strict. (See: https://github.com/dcos/dcos/pull/454#issuecomment-238408590)
+#This workaround can be removed when and if systemd reverts their
+#rp_filter settings back to 1 for 'default' and 'all'.
 sudo mkdir -p /etc/sysctl.d/
 cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
 net.ipv4.ip_forward=1
+net.ipv4.conf.default.rp_filter=1
+net.ipv4.conf.all.rp_filter=1
 EOT
 sudo systemctl restart systemd-sysctl
 

@@ -8,8 +8,5 @@ spec:
       containers:
         - name: calico-node
           image: quay.io/calico/node:v3.3.2
-          env:
-          - name: FELIX_IGNORELOOSERPF
-            value: "true"
         - name: install-cni
           image: quay.io/calico/cni:v3.3.2
