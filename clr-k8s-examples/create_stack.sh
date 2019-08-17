@@ -6,6 +6,8 @@ set -o nounset
 
 CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+: ${TOKEN:=}
+: ${MASTER_IP:=}
 
 function print_usage_exit() {
 	exit_code=${1:-0}
