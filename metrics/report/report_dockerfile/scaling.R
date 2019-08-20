@@ -59,43 +59,32 @@ for (currentdir in resultdirs) {
 			cdata=data.frame(boot_time=as.numeric(fdata$BootResults$launch_time$Result)/1000)
 			cdata=cbind(cdata, num_pods=as.numeric(fdata$BootResults$n_pods$Result))
 
-			# format the utilization data
-			udata=data.frame(nodename=fdata$BootResults$node_util)
-			for (i in seq(length(cdata[, "boot_time"]))) {
-				num_pods=fdata$BootResults$n_pods$Result[i]
-				index=i-1
-				if (i == 1) {
-					# first iteration provide column name for c1
-					c1=cbind(node=udata$nodename.node)
-					c2=cbind(noschedule=udata$nodename.noschedule)
-					c3=cbind(cpu_idle=udata$nodename.cpu_idle$Result)
-					c4=cbind(mem_free=udata$nodename.mem_free$Result)/(1024*1024)
-					# using index to make chart start with 0 rather than 1
-					c5=cbind(pod=rep(num_pods, length(udata$nodename.node)))
-					c6=cbind(testname=rep(testname, length(udata$nodename.node)))
-					# declare formatted utility data
-					fudata=cbind(c1,c2,c3,c4,c5,c6)
-				}
-				else {
-					# shift to 0 based indexing
-					sindex=(index*4)+1
-					eindex=sindex+3
-					# grab 3 columns for next row bind
-					row=cbind(udata[,sindex:eindex])
-					c1=cbind(node=row[,1])
-					c2=cbind(row[,2])
-					c3=cbind(row[,3]$Result)
-					c4=cbind(row[,4]$Result)/(1024*1024)
-					# using index to make chart start with 0 rather than 1
-					c5=cbind(rep(num_pods, length(udata$nodename.node)))
-					c6=cbind(rep(testname, length(udata$nodename.node)))
-					# create the new row (which is actually the number of nodes of rows)
-					frow=cbind(c1,c2,c3,c4,c5,c6)
-					fudata=rbind(fudata,frow)
-				}
+			# Gather up each 'column' from the dataframe - one per run instance.
+			# The length(node) parts are as each entry has an n-node array of
+			# results, so each iteration can create more than one new row in the
+			# final table.
+			fudata=c()
+			furoot=fdata$BootResults
+			for (n in seq(length(furoot$n_pods$Result))) {
+				num_pods=furoot$n_pods$Result[[n]]
+				u=furoot$node_util[[n]]
+				# first iteration provide column name for c1
+				c1=cbind(node=u$node)
+				c2=cbind(noschedule=u$noschedule)
+				c3=cbind(cpu_idle=u$cpu_idle$Result)
+				c4=cbind(mem_free=u$mem_free$Result)/(1024*1024)
+				# using index to make chart start with 0 rather than 1
+				c5=cbind(pod=rep(num_pods, length(u$node)))
+				c6=cbind(testname=rep(testname, length(u$node)))
+				# declare formatted utility data
+				row=cbind(c1,c2,c3,c4,c5,c6)
+				fudata=rbind(fudata,row)
 			}
-			# fudata is considered a vector for some reason so converting it to a data.frame
+
+			# Converting the vector to a data.frame.
+			# We could probably do this whole sequence more nicely if we use tibbles.
 			fudata=as.data.frame(fudata)
+
 			# get unique node names
 			nodes=unique(fudata$node)
 
