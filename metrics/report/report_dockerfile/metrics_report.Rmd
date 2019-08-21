@@ -35,8 +35,8 @@ and more idle `busybox` pods on a single node Kubernetes cluster.
 
 > Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.
 
-```{r, echo=FALSE, fig.cap="K8S scaling"}
-source('scaling.R')
+```{r, echo=FALSE, fig.cap="K8S scaling", results='asis'}
+source('tidy_scaling.R')
 ```
 
 \pagebreak
