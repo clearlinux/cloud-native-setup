@@ -22,6 +22,11 @@ HOSTOUTPUTDIR="${SCRIPT_PATH}/output"
 GUESTINPUTDIR="/inputdir/"
 GUESTOUTPUTDIR="/outputdir/"
 
+# If in debugging mode, we also map in the scripts dir so you can
+# dynamically edit and re-load them at the R prompt
+HOSTSCRIPTDIR="${SCRIPT_PATH}/report_dockerfile"
+GUESTSCRIPTDIR="/scripts/"
+
 # This function performs a docker build on the image names
 # passed in, to ensure that we have the latest changes from
 # the dockerfiles
@@ -95,7 +100,7 @@ setup() {
 }
 
 run() {
-	docker run -ti --rm -v ${HOSTINPUTDIR}:${GUESTINPUTDIR} -v ${HOSTOUTPUTDIR}:${GUESTOUTPUTDIR} ${IMAGE} ${extra_command}
+	docker run -ti --rm -v ${HOSTINPUTDIR}:${GUESTINPUTDIR} -v ${HOSTOUTPUTDIR}:${GUESTOUTPUTDIR} ${extra_volumes} ${IMAGE} ${extra_command}
 	ls -la ${HOSTOUTPUTDIR}/*
 }
 
@@ -107,6 +112,7 @@ main() {
 		d)
 			# In debug mode, run a shell instead of the default report generation
 			extra_command="bash"
+			extra_volumes="-v ${HOSTSCRIPTDIR}:${GUESTSCRIPTDIR}"
 			;;
 		esac
 	done
