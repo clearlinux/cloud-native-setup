@@ -13,8 +13,10 @@ $disks = 2
 $disk_prefix = File.basename(File.dirname(__FILE__), "/")
 $disk_size = "10G"
 $box = "AntonioMeireles/ClearLinux"
+$box_ver = (ENV['CLEAR_VBOX_VER'])
 File.exists?("/usr/share/qemu/OVMF.fd") ? $loader = "/usr/share/qemu/OVMF.fd" : $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
 $vm_name_prefix = "clr"
+$cni_cidr = (ENV['CNI_CIDR'] || "192.168.0.0/16" )
 $base_ip = IPAddr.new("192.52.100.10")
 $hosts = {}
 $proxy_ip_list = ""
@@ -47,7 +49,7 @@ Vagrant.configure("2") do |config|
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = $box
-  config.vm.box_version = "30260"
+  config.vm.box_version = $box_ver
 
   # Mount the current dir at home folder instead of default
   config.vm.synced_folder './', '/vagrant', disabled: true
@@ -81,7 +83,7 @@ Vagrant.configure("2") do |config|
         if Vagrant.has_plugin?("vagrant-proxyconf")
           c.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
           c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
-          c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}" || ENV['NO_PROXY']+"#{$proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{$proxy_ip_list}")
+          c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}"+",#{$cni_cidr}" || ENV['NO_PROXY']+"#{$proxy_ip_list}"+",#{$cni_cidr}"|| "localhost,127.0.0.1,172.16.10.10#{$proxy_ip_list}")
         end
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh", env: {"RUNNER" => $runner}
