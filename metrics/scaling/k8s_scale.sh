@@ -199,6 +199,10 @@ EOF
 
 init() {
 	info "Initialising"
+
+	local cmds=("bc")
+	check_cmds "${cmds[@]}"
+
 	info "Checking k8s accessible"
 	local worked=$( kubectl get nodes > /dev/null 2>&1 && echo $? || echo $? )
 	if [ "$worked" != 0 ]; then
