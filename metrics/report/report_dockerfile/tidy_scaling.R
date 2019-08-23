@@ -124,6 +124,12 @@ for (currentdir in resultdirs) {
 			for (n in nodes) {
 				# Make a frame with just that nodes data in
 				thisnode=subset(local_nodedata, node %in% c(n))
+
+				# Do not use the master (non-schedulable) nodes to calculate
+				# launched pod metrics
+				if(thisnode[1,]$noschedule == "true") {
+					next
+				}
 				memtotal = memtotal + thisnode[nrow(thisnode),]$mem_used
 				cpuused = thisnode[1,]$idle - thisnode[nrow(thisnode),]$idle
 				cputotal = cputotal + cpuused
@@ -178,6 +184,8 @@ for (currentdir in resultdirs) {
 # run, so make a new column with that pre-divided data in it for us to use.
 nodedata$mem_free_gb = nodedata$mem_free/(1024*1024)
 nodedata$mem_used_gb = nodedata$mem_used/(1024*1024)
+# And show the boot times in seconds, not mS
+bootdata$launch_time_s = bootdata$launch_time/1000
 
 # The labels get messed up by us using an 'if' in the aes() - correct it by
 # using the same 'if' to assign what we really want to use for the labels.
@@ -246,8 +254,8 @@ boot_stats_plot = suppressWarnings(ggtexttable(data.frame(bootstats),
 	))
 
 boot_line_plot <- ggplot() +
-	geom_line( data=bootdata, aes(n_pods, launch_time, colour=testname, group=testname), alpha=0.2) +
-	geom_point( data=bootdata, aes(n_pods, launch_time, colour=interaction(testname, node), group=testname), alpha=0.6, size=0.6, stroke=0, shape=16) +
+	geom_line( data=bootdata, aes(n_pods, launch_time_s, colour=testname, group=testname), alpha=0.2) +
+	geom_point( data=bootdata, aes(n_pods, launch_time_s, colour=interaction(testname, node), group=testname), alpha=0.6, size=0.6, stroke=0, shape=16) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
