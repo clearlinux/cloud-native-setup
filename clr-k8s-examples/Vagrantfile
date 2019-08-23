@@ -85,6 +85,9 @@ Vagrant.configure("2") do |config|
           c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}" || ENV['NO_PROXY']+"#{$proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{$proxy_ip_list}")
         end
       end
+      c.vm.provider :virtualbox do |_, override|
+        override.vm.provision "shell", privileged: true, inline: "sudo mkdir -p /etc/profile.d; echo export MASTER_IP=#{$hosts["clr-01"]} > /etc/profile.d/cnsetup.sh"
+      end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh", env: {"RUNNER" => $runner}
       if $setup_fc
         if $runner == "crio".to_s
