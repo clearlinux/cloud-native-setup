@@ -1,0 +1,22 @@
+# adds "mce" rule
+- op: add
+  path: /data/mce-monitor.json
+  value: |
+      {
+          "plugin": "journald",
+          "pluginConfig": {
+              "source": "mcelog"
+          },
+          "logPath": "/var/log/journal",
+          "lookback": "5m",
+          "bufferSize": 10,
+          "source": "mce-monitor",
+          "conditions": [],
+          "rules": [
+              {
+                  "type": "temporary",
+                  "reason": "Hardware Error",
+                  "pattern": "Hardware event.*"
+              }
+          ]
+      }
