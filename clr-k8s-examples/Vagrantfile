@@ -82,7 +82,7 @@ Vagrant.configure("2") do |config|
         if Vagrant.has_plugin?("vagrant-proxyconf")
           c.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
           c.proxy.https = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
-          c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}" || ENV['NO_PROXY']+"#{$proxy_ip_list}" || "localhost,127.0.0.1,172.16.10.10#{$proxy_ip_list}")
+          c.proxy.no_proxy =  (ENV['no_proxy']+"#{$proxy_ip_list}"+",192.168.121.0/24" || ENV['NO_PROXY']+"#{$proxy_ip_list}"+",192.168.121.0/24" || "localhost,127.0.0.1,172.16.10.10,#{$proxy_ip_list}")
         end
       end
       c.vm.provider :virtualbox do |_, override|
