@@ -36,7 +36,7 @@ TEST_ARGS="runtime=${RUNTIME}"
 TEST_NAME="k8s scaling"
 
 declare -a new_pods
-declare -a node_basemem
+declare -A node_basemem
 
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
