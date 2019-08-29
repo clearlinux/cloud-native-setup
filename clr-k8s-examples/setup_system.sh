@@ -123,6 +123,24 @@ Environment="SOCKS_PROXY=${socks_proxy}"
 Environment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
 EOF
 		done
+		# Add docker client proxy configuration for containers.
+		# If the configuration file already exists,
+		# add/replace only "proxies" in it.
+		# Updating json uses Python from the storage-utils bundle.
+		local docker_conf=~/.docker/config.json
+		mkdir -p $(dirname $docker_conf)
+		[ -f $docker_conf ] || echo '{}' > $docker_conf
+		python -c 'import json, sys; conf=json.load(open(sys.argv[1])); conf.update(json.load(sys.stdin)); open(sys.argv[1], "w").write(json.dumps(conf, indent=4, sort_keys=True))' $docker_conf <<EOF
+{
+    "proxies": {
+        "default": {
+            "httpProxy": "${http_proxy}",
+            "httpsProxy": "${https_proxy}",
+            "noProxy": "${no_proxy}"
+        }
+    }
+}
+EOF
 	fi
 	set -o nounset
 }
