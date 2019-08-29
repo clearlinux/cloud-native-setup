@@ -200,7 +200,7 @@ EOF
 init() {
 	info "Initialising"
 
-	local cmds=("bc")
+	local cmds=("bc" "jq")
 	check_cmds "${cmds[@]}"
 
 	info "Checking k8s accessible"
@@ -339,7 +339,7 @@ find_unique_pods() {
 					new_pods[${#new_pods[@]}]=$a
 				fi
 		done
-}	
+}
 
 cleanup() {
 	info "Cleaning up"
@@ -430,7 +430,6 @@ main() {
 		esac
 	done
 	shift $((OPTIND-1))
-
 	init
 	run
 	# cleanup will happen at exit due to the shell 'trap' we registered
@@ -438,4 +437,3 @@ main() {
 }
 
 main "$@"
-
