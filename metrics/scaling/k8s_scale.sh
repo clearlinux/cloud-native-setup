@@ -36,6 +36,7 @@ TEST_ARGS="runtime=${RUNTIME}"
 TEST_NAME="k8s scaling"
 
 declare -a new_pods
+declare -A node_basemem
 
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
@@ -44,6 +45,8 @@ grab_stats() {
 	local n_pods=$2
 	local cpu_idle=()
 	local mem_free=()
+	local total_mem_used=0
+
 	info "And grab some stats"
 
 	local date_json="$(cat << EOF
@@ -101,6 +104,17 @@ EOF
 		cpu_idle=${cpu_idle:-0}
 		mem_free=${mem_free:-0}
 
+		# If this is the 0 node instance, store away the base memory value
+		if [ $n_pods -eq 0 ]; then
+			node_basemem[$node]=$mem_free
+		fi
+
+		local mem_used=$((node_basemem[$node]-mem_free))
+		# Only account for memory usage on schedulable nodes
+		if [ $noschedule == false ]; then
+			total_mem_used=$((total_mem_used+mem_used))
+		fi
+
 		local util_json="$(cat << EOF
 		{
 			"node": "${node}",
@@ -111,6 +125,10 @@ EOF
 			},
 			"mem_free": {
 				"Result": ${mem_free},
+				"Units" : "kb"
+			},
+			"mem_used": {
+				"Result": ${mem_used},
 				"Units" : "kb"
 			}
 		}
@@ -156,11 +174,35 @@ EOF
 	fi
 	metrics_json_end_nested_array "launched_pods"
 
+	# And store off the total memory consumed across all nodes, and the pod/Gb value
+	if [ $n_pods -eq 0 ]; then
+		local pods_per_gb=0
+	else
+		local pods_per_gb=$(bc -l <<< "scale=2; ($total_mem_used/1024) / $n_pods")
+	fi
+	local mem_json="$(cat << EOF
+			"memory": {
+				"consumed": {
+					"Result": ${total_mem_used},
+					"Units": "Kb"
+				},
+				"pods_per_gb": {
+					"Result": ${pods_per_gb}
+				}
+			}
+EOF
+	)"
+	metrics_json_add_array_fragment "$mem_json"
+
 	metrics_json_close_array_element
 }
 
 init() {
 	info "Initialising"
+
+	local cmds=("bc" "jq")
+	check_cmds "${cmds[@]}"
+
 	info "Checking k8s accessible"
 	local worked=$( kubectl get nodes > /dev/null 2>&1 && echo $? || echo $? )
 	if [ "$worked" != 0 ]; then
@@ -297,7 +339,7 @@ find_unique_pods() {
 					new_pods[${#new_pods[@]}]=$a
 				fi
 		done
-}	
+}
 
 cleanup() {
 	info "Cleaning up"
@@ -388,7 +430,6 @@ main() {
 		esac
 	done
 	shift $((OPTIND-1))
-
 	init
 	run
 	# cleanup will happen at exit due to the shell 'trap' we registered
@@ -396,4 +437,3 @@ main() {
 }
 
 main "$@"
-

@@ -3,21 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-title: "Kubernetes metrics report"
-author: "Auto generated"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output:
-  pdf_document:
-urlcolor: blue
 ---
-
-```{r setup, include=FALSE}
-#Set these opts to get pdf images which fit into beamer slides better
-opts_chunk$set(dev = 'pdf')
-# Pick up any env set by the invoking script, such as the root dir of the
-# results data tree
-source("/inputdir/Env.R")
-```
 \pagebreak
 
 # Introduction
@@ -35,8 +21,8 @@ and more idle `busybox` pods on a single node Kubernetes cluster.
 
 > Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.
 
-```{r, echo=FALSE, fig.cap="K8S scaling"}
-source('scaling.R')
+```{r scaling, echo=FALSE, fig.cap="K8S scaling", results='asis'}
+source('tidy_scaling.R')
 ```
 
 \pagebreak
@@ -46,6 +32,18 @@ This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s
 measures the time taken to launch and delete pods in parallel using a deployment. The times
 are how long it takes for the whole deployment operation to complete.
 
-```{r, echo=FALSE, fig.cap="K8S parallel pods"}
+```{r parallel, echo=FALSE, fig.cap="K8S parallel pods"}
 source('parallel.R')
+```
+
+\pagebreak
+
+# Test setup details
+
+This table describes the test system details, as derived from the information contained
+in the test results files.
+
+
+```{r dut, echo=FALSE, fig.cap="System configuration details"}
+source('dut-details.R')
 ```

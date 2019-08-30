@@ -60,14 +60,18 @@ directory.
 
 To aid in script development and debugging, the `makereport.sh` script offers a debug
 facility via the `-d` command line option. Using this option will place you into a `bash`
-shell within the running `Dockerfile` image used to generate the report. From there you
-can examine the Docker image environment, and execute the generation scripts. E.g., to
-test the `scaling.R` script, you can execute:
+shell within the running `Dockerfile` image used to generate the report, whilst also
+mapping your host side `R` scripts from the `report_dockerfile` subdirectory into the
+container, thus facilitating a 'live' edit/reload/run development cycle.
+From there you can examine the Docker image environment, and execute the generation scripts.
+E.g., to test the `tidy_scaling.R` script, you can execute:
 
 ```bash
 $ makereport.sh -d
 # R
 > source('/inputdir/Env.R')
-> source('/scripts/scaling.R')
+> source('/scripts/tidy_scaling.R')
+## Edit script on host, and re-load/run...
+> source('/scripts/tidy_scaling.R')
 ```
 

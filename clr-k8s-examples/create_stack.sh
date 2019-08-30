@@ -6,6 +6,8 @@ set -o nounset
 
 CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+: ${TOKEN:=}
+: ${MASTER_IP:=}
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -29,6 +31,12 @@ function finish() {
 trap finish EXIT
 
 function cluster_init() {
+  if ! [ -z ${TOKEN} ]; then
+    sed -i "/InitConfiguration/a bootstrapTokens:\\n- token: ${TOKEN}" ./kubeadm.yaml
+  fi
+  if ! [ -z ${MASTER_IP} ]; then
+    sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm.yaml
+  fi
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
 	if [[ -d /var/lib/etcd ]]; then

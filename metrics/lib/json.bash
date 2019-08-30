@@ -111,7 +111,7 @@ EOF
 	# If we have a JSON URL or host/socket pair set up, post the results there as well.
 	# Optionally compress into a single line.
 	if [[ $JSON_TX_ONELINE ]]; then
-		json="$(sed 's/[\n\t]//g' <<< ${json})"
+		json=$(tr -d '\t\n\r\f' <<< ${json})
 	fi
 
 	if [[ $JSON_HOST ]]; then
