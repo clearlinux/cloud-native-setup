@@ -135,15 +135,16 @@ for (currentdir in resultdirs) {
 				cputotal = cputotal + cpuused
 			}
 
+			num_pods = local_bootdata$n_pods[length(local_bootdata$n_pods)]
 			# We get data in Kb, but want the graphs in Gb.
 			memtotal = memtotal / (1024*1024)
-			gb_per_pod = memtotal/fdata$Config$NUM_PODS
+			gb_per_pod = memtotal/num_pods
 			pod_per_gb = 1/gb_per_pod
 
 			# Memory usage stats.
 			local_mems = c(
 				"Test"=testname,
-				"n"=fdata$Config$NUM_PODS,
+				"n"=num_pods,
 				"Tot_Gb"=round(memtotal, 3),
 				"avg_Gb"=round(gb_per_pod, 4),
 				"n_per_Gb"=round(pod_per_gb, 2) 
@@ -153,16 +154,16 @@ for (currentdir in resultdirs) {
 			# cpu usage stats
 			local_cpus = c(
 				"Test"=testname,
-				"n"=fdata$Config$NUM_PODS,
+				"n"=num_pods,
 				"Tot_CPU"=round(cputotal, 3),
-				"avg_CPU"=round(cputotal/fdata$Config$NUM_PODS, 4)
+				"avg_CPU"=round(cputotal/num_pods, 4)
 			)
 			cpustats=rbind(cpustats, local_cpus)
 
 			# launch (boot) stats
 			local_boots = c(
 				"Test"=testname,
-				"n"=fdata$Config$NUM_PODS,
+				"n"=num_pods,
 				"median"=median(na.omit(local_bootdata)$launch_time)/1000,
 				"min"=min(na.omit(local_bootdata)$launch_time)/1000,
 				"max"=max(na.omit(local_bootdata)$launch_time)/1000,
