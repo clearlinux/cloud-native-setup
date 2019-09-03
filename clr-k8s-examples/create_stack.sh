@@ -31,12 +31,12 @@ function finish() {
 trap finish EXIT
 
 function cluster_init() {
-  if ! [ -z ${TOKEN} ]; then
-    sed -i "/InitConfiguration/a bootstrapTokens:\\n- token: ${TOKEN}" ./kubeadm.yaml
-  fi
-  if ! [ -z ${MASTER_IP} ]; then
-    sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm.yaml
-  fi
+	if ! [ -z ${TOKEN} ]; then
+		sed -i "/InitConfiguration/a bootstrapTokens:\\n- token: ${TOKEN}" ./kubeadm.yaml
+	fi
+	if ! [ -z ${MASTER_IP} ]; then
+		sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm.yaml
+	fi
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
 	if [[ -d /var/lib/etcd ]]; then
@@ -200,6 +200,15 @@ function metallb() {
 
 }
 
+function npd() {
+	NPD_VER=${1:-v0.6.6}
+	NPD_URL="https://github.com/kubernetes/node-problem-detector.git"
+	NPD_DIR="node-problem-detector"
+	get_repo "${NPD_URL}" "${NPD_DIR}/overlays/${NPD_VER}"
+	set_repo_version "${NPD_VER}" "${NPD_DIR}/overlays/${NPD_VER}/node-problem-detector"
+	kubectl apply -k "${NPD_DIR}/overlays/${NPD_VER}"
+}
+
 function miscellaneous() {
 
 	# dashboard
@@ -261,6 +270,7 @@ command_handlers[help]=print_usage_exit
 command_handlers[storage]=storage
 command_handlers[monitoring]=monitoring
 command_handlers[metallb]=metallb
+command_handlers[npd]=npd
 
 declare -A command_help
 command_help[init]="Only inits a cluster using kubeadm"

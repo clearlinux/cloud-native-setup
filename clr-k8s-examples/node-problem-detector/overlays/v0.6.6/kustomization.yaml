@@ -1,0 +1,17 @@
+resources:
+  - node-problem-detector/deployment/node-problem-detector-config.yaml
+  - node-problem-detector/deployment/node-problem-detector.yaml
+
+patchesJson6902:
+  # adds rule for mce
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: node-problem-detector-config
+    path: patch_configmap_rules.yaml
+  # adds mce-monitor.json to configmap
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: node-problem-detector-config
+    path: patch_configmap_mce-monitor.yaml
