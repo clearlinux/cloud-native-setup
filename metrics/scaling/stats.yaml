@@ -11,6 +11,7 @@ spec:
       labels:
         name: stats-pods
     spec:
+      hostNetwork: true
       tolerations:
         - key: node-role.kubernetes.io/master
           operator: Exists
