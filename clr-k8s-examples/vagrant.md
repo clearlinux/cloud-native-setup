@@ -36,10 +36,18 @@ Note, vagrant installation steps were derived from:
 
 On Clear Linux, run these commands
 ```bash
-sudo wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/libvirtd.sh
+sudo swupd update
+```
+Make sure all the prerequisite packages are installed
+```bash
+sudo swupd bundle-add unzip rsync wget kvm-host
+```
+Now, run the following scripts
+```bash
+wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/libvirtd.sh
 chmod +x libvirtd.sh
 ./libvirtd.sh
-sudo wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/vagrant.sh
+wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/vagrant.sh
 chmod +x vagrant.sh
 ./vagrant.sh
 ```
@@ -50,4 +58,8 @@ vagrant --version
 Run vagrant
 ```bash
 vagrant up --provider=libvirt
+```
+You can check the vagrant status using the following command
+```bash
+vagrant status
 ```
