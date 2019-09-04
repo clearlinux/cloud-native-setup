@@ -37,6 +37,7 @@ TEST_NAME="k8s scaling"
 
 declare -a new_pods
 declare -A node_basemem
+declare -A node_baseinode
 
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
@@ -96,20 +97,24 @@ EOF
 		# if you don't tell it the period, you will get the avg since boot, which is not what we want.
 		local cpu_idle=$(kubectl exec -ti $name -- sh -c "mpstat -u 3 1 | tail -1 | awk '{print \$11}'" | sed 's/\r//')
 		local mem_free=$(kubectl exec -ti $name -- sh -c "free | tail -2 | head -1 | awk '{print \$4}'" | sed 's/\r//')
+		local inode_free=$(kubectl exec -ti $name -- sh -c "df -i | awk '/^overlay/ {print \$4}'" | sed 's/\r//')
 
-		info "idle [$cpu_idle] free [$mem_free] launch [$launch_time_ms] node [$node]"
+		info "idle [$cpu_idle] free [$mem_free] launch [$launch_time_ms] node [$node] inodes_free [$inode_free]"
 
 		# Annoyingly, it seems sometimes once in a while we don't get an answer!
 		# We should really retry, but for now, make the json valid at least
 		cpu_idle=${cpu_idle:-0}
 		mem_free=${mem_free:-0}
+		inode_free=${inode_free:-0}
 
 		# If this is the 0 node instance, store away the base memory value
 		if [ $n_pods -eq 0 ]; then
 			node_basemem[$node]=$mem_free
+			node_baseinode[$node]=$inode_free
 		fi
 
 		local mem_used=$((node_basemem[$node]-mem_free))
+		local inode_used=$((node_baseinode[$node]-inode_free))
 		# Only account for memory usage on schedulable nodes
 		if [ $noschedule == false ]; then
 			total_mem_used=$((total_mem_used+mem_used))
@@ -130,6 +135,12 @@ EOF
 			"mem_used": {
 				"Result": ${mem_used},
 				"Units" : "kb"
+			},
+			"inode_free": {
+				"Result": ${inode_free}
+			},
+			"inode_used": {
+				"Result": ${inode_used}
 			}
 		}
 EOF

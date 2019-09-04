@@ -22,6 +22,7 @@ nodedata=c()	# Track node status data
 memstats=c()	# Statistics for memory usage
 cpustats=c()	# Statistics for cpu usage
 bootstats=c()	# Statistics for boot (launch) times
+inodestats=c()	# Statistics for inode usage
 
 # iterate over every set of results (test run)
 for (currentdir in resultdirs) {
@@ -99,6 +100,11 @@ for (currentdir in resultdirs) {
 			free_df=do.call("rbind", lapply(free, "[[", "mem_free"))
 			used=lapply(nu, "[", "mem_used")
 			used_df=do.call("rbind", lapply(used, "[[", "mem_used"))
+			ifree=lapply(nu, "[", "inode_free")
+			ifree_df=do.call("rbind", lapply(ifree, "[[", "inode_free"))
+			iused=lapply(nu, "[", "inode_used")
+			iused_df=do.call("rbind", lapply(iused, "[[", "inode_used"))
+
 
 			# and build our rows
 			local_nodedata=tibble(node=nodes$node)
@@ -107,6 +113,8 @@ for (currentdir in resultdirs) {
 			local_nodedata=cbind(local_nodedata, idle=idle_df$Result)
 			local_nodedata=cbind(local_nodedata, mem_free=free_df$Result)
 			local_nodedata=cbind(local_nodedata, mem_used=used_df$Result)
+			local_nodedata=cbind(local_nodedata, inode_free=ifree_df$Result)
+			local_nodedata=cbind(local_nodedata, inode_used=iused_df$Result)
 			local_nodedata=cbind(local_nodedata, testname=rep(testname, length(local_nodedata$node)))
 
 			# Now Calculate some stats. This gets more complicated as we may have n-nodes,
@@ -120,6 +128,7 @@ for (currentdir in resultdirs) {
 
 			memtotal=0
 			cputotal=0
+			inodetotal=0
 			# Calculate per-node totals, and tot them up to a global total.
 			for (n in nodes) {
 				# Make a frame with just that nodes data in
@@ -133,6 +142,7 @@ for (currentdir in resultdirs) {
 				memtotal = memtotal + thisnode[nrow(thisnode),]$mem_used
 				cpuused = thisnode[1,]$idle - thisnode[nrow(thisnode),]$idle
 				cputotal = cputotal + cpuused
+				inodetotal = inodetotal + thisnode[nrow(thisnode),]$inode_used
 			}
 
 			num_pods = local_bootdata$n_pods[length(local_bootdata$n_pods)]
@@ -171,6 +181,15 @@ for (currentdir in resultdirs) {
 				)
 
 			bootstats=rbind(bootstats, local_boots)
+
+			# inode stats
+			local_inodes = c(
+				"Test"=testname,
+				"n"=num_pods,
+				"Tot_inode"=round(inodetotal, 3),
+				"avg_inode"=round(inodetotal/num_pods, 4)
+				)
+			inodestats=rbind(inodestats, local_inodes)
 		}
 
 		# And collect up our rows into our global table of all results
@@ -268,3 +287,30 @@ page3 = grid.arrange(
 	ncol=1
 	)
 
+# pagebreak, as the graphs overflow the page otherwise
+cat("\n\n\\pagebreak\n")
+
+########## Output inode page ##############
+inode_stats_plot = suppressWarnings(ggtexttable(data.frame(inodestats),
+	theme=ttheme(base_size=10),
+	rows=NULL
+	))
+
+inode_line_plot <- ggplot(data=nodedata, aes(n_pods,
+		inode_free,
+		colour=(if (length(resultdirs) > 1) testname else node),
+		group=interaction(testname, node))) +
+	labs(colour=colour_label) +
+	geom_line(alpha=0.2) +
+	geom_point(aes(shape=node), alpha=0.3, size=0.5) +
+	xlab("pods") +
+	ylab("inodes free") +
+	scale_y_continuous(labels=comma) +
+	ggtitle("inodes free") +
+	theme(axis.text.x=element_text(angle=90))
+
+page4 = grid.arrange(
+	inode_line_plot,
+	inode_stats_plot,
+	ncol=1
+	)
