@@ -34,16 +34,15 @@ Note, vagrant installation steps were derived from:
 
 ## Install vagrant on Clear Linux
 
-Install unzip bundle using the following command, since [`vagrant.sh`](https://github.com/AntonioMeireles/ClearLinux-packer/blob/master/extras/clearlinux/setup/vagrant.sh) requires it.
-```bash
-sudo swupd bundle-add unzip
-```
-Install rsync bundle using the following command, since [`Vagrantfile`](https://github.com/clearlinux/cloud-native-setup/blob/master/clr-k8s-examples/Vagrantfile) requires it.
-```bash
-sudo swupd bundle-add rsync
-```
-
 On Clear Linux, run these commands
+```bash
+sudo swupd update
+```
+Make sure all the prerequisite packages are installed
+```bash
+sudo swupd bundle-add unzip rsync wget kvm-host
+```
+Now, run the following scripts
 ```bash
 wget https://raw.githubusercontent.com/AntonioMeireles/ClearLinux-packer/master/extras/clearlinux/setup/libvirtd.sh
 chmod +x libvirtd.sh
@@ -56,7 +55,6 @@ Check if vagrant is installed successfully
 ```bash
 vagrant --version
 ```
-
 Run vagrant
 ```bash
 vagrant up --provider=libvirt
