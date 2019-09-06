@@ -5,6 +5,7 @@ set -o nounset
 
 # global vars
 CLRK8S_OS=${CLRK8S_OS:-""}
+HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # set no proxy
 ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
@@ -77,6 +78,55 @@ function setup_hosts() {
 	else
 		echo "/etc/hosts already configured"
 	fi
+}
+
+# write increased limits to specified file
+function write_limits_conf() {
+	cat <<EOT | sudo bash -c "cat > $1"
+[Service]
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=1048576
+TimeoutStartSec=0
+MemoryLimit=infinity
+EOT
+}
+
+# update configuration to enable high pod counts
+function config_high_pod_count() {
+	# install bundle dependencies
+	sudo -E swupd bundle-add --quiet jq bc
+
+	# increase max inotify watchers
+	cat <<EOT | sudo bash -c "cat > /etc/sysctl.conf"
+fs.inotify.max_queued_events=1048576
+fs.inotify.max_user_watches=1048576
+fs.inotify.max_user_instances=1048576
+EOT
+	sudo sysctl -p
+
+	# write configuration files
+	sudo mkdir -p /etc/systemd/system/kubelet.service.d
+	write_limits_conf "/etc/systemd/system/kubelet.service.d/limits.conf"
+	if [ "$RUNNER" == "containerd" ]; then
+		sudo mkdir -p /etc/systemd/system/containerd.service.d
+		write_limits_conf "/etc/systemd/system/containerd.service.d/limits.conf"
+	fi
+	if [ "$RUNNER" == "crio" ]; then
+		sudo mkdir -p /etc/systemd/system/crio.service.d
+		write_limits_conf "/etc/systemd/system/crio.service.d/limits.conf"
+	fi
+
+	# increase limits in kubelet
+	sudo sed -i 's/^maxPods\:.*/maxPods\: 5000/' /var/lib/kubelet/config.yaml
+	sudo sed -i 's/^maxOpenFiles\:.*/maxOpenFiles\: 1048576/' /var/lib/kubelet/config.yaml
+
+	# increase the address range per node
+	cat <<EOT >> kubeadm.yaml
+controllerManager:
+  extraArgs:
+    node-cidr-mask-size: "20"
+EOT
 }
 
 # daemon reload
@@ -155,6 +205,10 @@ echo "Setting up modules to load..."
 setup_modules_load
 echo "Setting up /etc/hosts..."
 setup_hosts
+if [[ -n "${HIGH_POD_COUNT}" ]]; then
+	echo "Configure high pod count scaling..."
+	config_high_pod_count
+fi
 echo "Reloading daemons..."
 daemon_reload
 echo "Enabling Kublet runner..."
