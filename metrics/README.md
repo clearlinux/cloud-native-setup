@@ -13,7 +13,6 @@ is below:
 
 | Tool | Description |
 | ---- | ----------- |
-| config | Configuration scripts |
 | lib | General library helper functions for forming and launching workloads, and storing results in a uniform manner to aid later analysis |
 | scaling | Tests to measure scaling, such as linear or parallel launching of pods |
 | report | Rmarkdown based report generator, used to produce a PDF comparison report of 1 or more sets of results |

@@ -36,6 +36,13 @@ This script ensures the following
 
 > NOTE: This step is done automatically if using vagrant.
 
+### Configuration for high numbers of pods per node
+
+In order to enable running greater than 110 pods per node, set the environment
+variable `HIGH_POD_COUNT` to any non-empty value.
+
+> NOTE: Use this configuration when utilizing the [metrics](../metrics) tooling in this repo.
+
 ### Enabling experimental firecracker support
 
 > EXPERIMENTAL: Optionally run [`setup_kata_firecracker.sh`](setup_kata_firecracker.sh) to be
