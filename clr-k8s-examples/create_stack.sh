@@ -8,6 +8,7 @@ CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${TOKEN:=}
 : ${MASTER_IP:=}
+HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -37,6 +38,16 @@ function cluster_init() {
 	if ! [ -z ${MASTER_IP} ]; then
 		sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm.yaml
 	fi
+
+	if [[ -n "${HIGH_POD_COUNT}" ]]; then
+		# increase the address range per node
+		cat <<EOT >> kubeadm.yaml
+controllerManager:
+  extraArgs:
+    node-cidr-mask-size: "20"
+EOT
+	fi
+
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
 	if [[ -d /var/lib/etcd ]]; then
@@ -62,6 +73,12 @@ function cluster_init() {
 	#Ensure single node k8s works
 	if [ "$(kubectl get nodes | wc -l)" -eq 2 ]; then
 		kubectl taint nodes --all node-role.kubernetes.io/master-
+	fi
+
+	if [[ -n "${HIGH_POD_COUNT}" ]]; then
+		# increase limits in kubelet
+		sudo sed -i 's/^maxPods\:.*/maxPods\: 5000/' /var/lib/kubelet/config.yaml
+		sudo sed -i 's/^maxOpenFiles\:.*/maxOpenFiles\: 1048576/' /var/lib/kubelet/config.yaml
 	fi
 }
 

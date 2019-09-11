@@ -103,7 +103,7 @@ fs.inotify.max_queued_events=1048576
 fs.inotify.max_user_watches=1048576
 fs.inotify.max_user_instances=1048576
 EOT
-	sudo sysctl -p
+	sudo sysctl -q -p
 
 	# write configuration files
 	sudo mkdir -p /etc/systemd/system/kubelet.service.d
@@ -116,17 +116,6 @@ EOT
 		sudo mkdir -p /etc/systemd/system/crio.service.d
 		write_limits_conf "/etc/systemd/system/crio.service.d/limits.conf"
 	fi
-
-	# increase limits in kubelet
-	sudo sed -i 's/^maxPods\:.*/maxPods\: 5000/' /var/lib/kubelet/config.yaml
-	sudo sed -i 's/^maxOpenFiles\:.*/maxOpenFiles\: 1048576/' /var/lib/kubelet/config.yaml
-
-	# increase the address range per node
-	cat <<EOT >> kubeadm.yaml
-controllerManager:
-  extraArgs:
-    node-cidr-mask-size: "20"
-EOT
 }
 
 # daemon reload
