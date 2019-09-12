@@ -68,6 +68,9 @@ more information.
 ./create_stack.sh <subcommand>
 ```
 
+In order to enable running greater than 110 pods per node, set the environment
+variable `HIGH_POD_COUNT` to any non-empty value.
+
 ## Join Workers to the cluster
 
 ```bash
