@@ -40,12 +40,11 @@ function cluster_init() {
 	fi
 
 	if [[ -n "${HIGH_POD_COUNT}" ]]; then
+		# increase limits in kubelet
+		sed -i "/KubeletConfiguration/a maxOpenFiles\: 1048576" ./kubeadm.yaml
+		sed -i "/KubeletConfiguration/a maxPods\: 5000" ./kubeadm.yaml
 		# increase the address range per node
-		cat <<EOT >> kubeadm.yaml
-controllerManager:
-  extraArgs:
-    node-cidr-mask-size: "20"
-EOT
+		sed -i "/ClusterConfiguration/a controllerManager:\\n  extraArgs:\\n    node-cidr-mask-size: \"20\"" ./kubeadm.yaml
 	fi
 
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
@@ -73,12 +72,6 @@ EOT
 	#Ensure single node k8s works
 	if [ "$(kubectl get nodes | wc -l)" -eq 2 ]; then
 		kubectl taint nodes --all node-role.kubernetes.io/master-
-	fi
-
-	if [[ -n "${HIGH_POD_COUNT}" ]]; then
-		# increase limits in kubelet
-		sudo sed -i 's/^maxPods\:.*/maxPods\: 5000/' /var/lib/kubelet/config.yaml
-		sudo sed -i 's/^maxOpenFiles\:.*/maxOpenFiles\: 1048576/' /var/lib/kubelet/config.yaml
 	fi
 }
 
