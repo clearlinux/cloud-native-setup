@@ -10,6 +10,9 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${MASTER_IP:=}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
+CNI=${CNI:-"canal"}
+RUNNER=${RUNNER:-"crio"}
+
 function print_usage_exit() {
 	exit_code=${1:-0}
 	cat <<EOT
@@ -85,7 +88,10 @@ function kata() {
 
 }
 
+
 function cni() {
+	case "$CNI" in
+		canal)
 	# note version is not semver
 	CANAL_VER=${1:-v3.3}
 	CANAL_URL="https://docs.projectcalico.org/$CANAL_VER/getting-started/kubernetes/installation/hosted/canal"
@@ -97,7 +103,27 @@ function cni() {
 	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
 	# canal doesnt pass kustomize validation
 	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
+	;;
+		cilium)
+	CILIUM_VER=${1:-v1.6}
+	CILIUM_URL="https://github.com/cilium/cilium/archive/$CILIUM_VER.tar.gz"
+	CILIUM_DIR="0-cilium"
 
+	mkdir -p "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium"
+	pushd "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/"
+	wget -O "$CILIUM_VER.tar.gz" "$CILIUM_URL"
+	tar xzf "$CILIUM_VER.tar.gz"
+	pushd cilium-"${CILIUM_VER#*v}"/install/kubernetes
+	helm template cilium --namespace kube-system --set global.containerRuntime.integration="$RUNNER" > cilium.yaml
+	kubectl apply -f cilium.yaml
+	popd
+	popd
+	;;
+	*)
+	echo"Unknown cni $CNI"
+	exit 1
+	;;
+esac
 }
 
 function metrics() {

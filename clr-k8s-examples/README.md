@@ -63,6 +63,10 @@ you need to setup other cluster wide properties.
 There are different flavors to install, run `./create_stack.sh help` to get
 more information.
 
+> NOTE: Before running [`create_stack.sh`](create_stack.sh) script, make sure to export
+the necessary environment variables if needed to be changed. By default it will use
+CNI to be canal, and RUNNER to be crio.
+
 ```bash
 # default shows help
 ./create_stack.sh <subcommand>
