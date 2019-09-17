@@ -22,6 +22,7 @@ $proxy_ip_list = "192.168.121.0/24"
 $driveletters = ('a'..'z').to_a
 $setup_fc = true ? (['true', '1'].include? ENV['SETUP_FC'].to_s) : false
 $runner = ENV.has_key?('RUNNER') ? ENV['RUNNER'].to_s : "containerd".to_s
+$high_pod_count = ENV.has_key?('HIGH_POD_COUNT') ? ENV['HIGH_POD_COUNT'].to_s : ""
 if !(["crio","containerd"].include? $runner)
   abort("it's either crio or containerd. Cannot do anything else")
 end
@@ -96,7 +97,7 @@ Vagrant.configure("2") do |config|
       c.vm.provider :virtualbox do |_, override|
         override.vm.provision "shell", privileged: true, inline: "sudo mkdir -p /etc/profile.d; echo export MASTER_IP=#{$hosts["clr-01"]} > /etc/profile.d/cnsetup.sh"
       end
-      c.vm.provision "shell", privileged: false, path: "setup_system.sh", env: {"RUNNER" => $runner}
+      c.vm.provision "shell", privileged: false, path: "setup_system.sh", env: {"RUNNER" => $runner, "HIGH_POD_COUNT" => $high_pod_count}
       if $setup_fc
         if $runner == "crio".to_s
         c.vm.provision "shell", privileged: false, path: "setup_kata_firecracker.sh"
