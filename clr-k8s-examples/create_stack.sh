@@ -201,7 +201,7 @@ function efk() {
 }
 
 function metallb() {
-	METALLB_VER=${1:-v0.7.3}
+	METALLB_VER=${1:-v0.8.1}
 	METALLB_URL="https://github.com/danderson/metallb.git"
 	METALLB_DIR="6-metal-lb"
 	get_repo "${METALLB_URL}" "${METALLB_DIR}/overlays/${METALLB_VER}"
