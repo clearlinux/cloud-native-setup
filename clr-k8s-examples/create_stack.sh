@@ -76,7 +76,7 @@ function cluster_init() {
 }
 
 function kata() {
-	KATA_VER=${1:-1.8.0-kernel-config}
+	KATA_VER=${1:-1.8.2-kernel-config}
 	KATA_URL="https://github.com/kata-containers/packaging.git"
 	KATA_DIR="8-kata"
 	get_repo "${KATA_URL}" "${KATA_DIR}/overlays/${KATA_VER}"
