@@ -1,6 +1,36 @@
 # Developer
 
-This document describes the key concepts and technologies used in the project.
+This document describes the key concepts and technologies used in the project, and lists the ways to contribute to the 
+project.
+
+## Code Conventions
+
+### Shell Scripts 
+
+Shell scripts should adhere to the [Google Shell Style Guide](https://google.github.io/styleguide/shell.xml) as much as 
+possible.
+
+#### Formatting with `shfmt`
+
+The [shfmt](https://github.com/mvdan/sh#shfmt) tool should be used to format shell scripts with 2 spaces and should use 
+the following parameters:
+
+```shell script
+shfmt -i 2 -ci
+``` 
+
+#### Linting with shellcheck
+
+The [shellcheck](https://github.com/koalaman/shellcheck) tool should be used to identify issues with the scripts 
+themselves. The config file for shellcheck is typically found in `~/.shellcheckrc` and should include rules that 
+are [ignored](https://github.com/koalaman/shellcheck/wiki/Ignore) project wide.
+
+```shell script
+# ~/.shellcheckrc
+# disabled rules here 
+```
+
+
 
 ## Kustomize Usage
 
