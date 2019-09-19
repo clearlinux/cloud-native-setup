@@ -189,8 +189,9 @@ function dashboard() {
 	kubectl apply -k "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}"
 }
 
+
 function ingres() {
-	INGRES_VER=${1:-nginx-0.25.0}
+	INGRES_VER=${1:-nginx-0.25.1}
 	INGRES_URL="https://github.com/kubernetes/ingress-nginx.git"
 	INGRES_DIR="5-ingres-lb"
 	get_repo "${INGRES_URL}" "${INGRES_DIR}/overlays/${INGRES_VER}"
