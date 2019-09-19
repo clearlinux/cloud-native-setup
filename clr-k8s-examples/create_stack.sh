@@ -10,6 +10,8 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${MASTER_IP:=}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
+ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.0}"
+
 function print_usage_exit() {
 	exit_code=${1:-0}
 	cat <<EOT
@@ -109,7 +111,15 @@ function metrics() {
 	kubectl apply -k "${METRICS_DIR}/overlays/${METRICS_VER}"
 
 }
-
+function wait_on_pvc() {
+	# create and destroy pvc until successful
+	while [[ $(kubectl get pvc test-pv-claim --no-headers | grep Bound -c) -ne 1 ]]; do
+		sleep 30
+		kubectl delete pvc test-pv-claim
+		create_pvc
+		sleep 10
+	done
+}
 function create_pvc() {
 	kubectl apply -f - <<HERE
 ---
@@ -128,10 +138,12 @@ HERE
 }
 
 function storage() {
-	#Start rook before any other component that requires storage
-	ROOK_VER="${1:-v1.0.3}"
+	# start rook before any other component that requires storage
+	ROOK_VER="${1:-$ROOK_VER}"
 	ROOK_URL="https://github.com/rook/rook.git"
 	ROOK_DIR=7-rook
+
+	# get and apply rook
 	get_repo "${ROOK_URL}" "${ROOK_DIR}/overlays/${ROOK_VER}"
 	set_repo_version "${ROOK_VER}" "${ROOK_DIR}/overlays/${ROOK_VER}/rook"
 	kubectl apply -k "${ROOK_DIR}/overlays/${ROOK_VER}"
@@ -140,17 +152,13 @@ function storage() {
 		echo "Waiting for Rook OSD"
 		sleep 60
 	done
-	# set default storage class to rook-ceph-block
-	kubectl patch storageclass rook-ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-	create_pvc
-	# create and destroy pvc until successful
-	while [[ $(kubectl get pvc test-pv-claim --no-headers | grep Bound -c) -ne 1 ]]; do
-		sleep 30
-		kubectl delete pvc test-pv-claim
-		create_pvc
-		sleep 10
-	done
 
+	# set default storageclass
+	kubectl patch storageclass rook-ceph-block -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+	create_pvc
+	# wait for pvc so subsequent pods have storage
+	wait_on_pvc
 }
 
 function monitoring() {
