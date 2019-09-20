@@ -104,6 +104,12 @@ function cni() {
 	# canal doesnt pass kustomize validation
 	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
 	;;
+		flannel)
+	FLANNEL_URL="https://raw.githubusercontent.com/coreos/flannel/62e44c867a2846fefb68bd5f178daf4da3095ccb/Documentation/kube-flannel.yml"
+	
+	sudo ln -sfn /usr/libexec/cni/* /opt/cni/bin/
+	kubectl apply -f "$FLANNEL_URL"
+	;;
 		cilium)
 	CILIUM_VER=${1:-v1.6}
 	CILIUM_URL="https://github.com/cilium/cilium/archive/$CILIUM_VER.tar.gz"
