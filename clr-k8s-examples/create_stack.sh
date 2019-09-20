@@ -12,6 +12,7 @@ CUR_DIR=$(pwd)
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${TOKEN:=}
 : ${MASTER_IP:=}
+: ${CERT_SANS:=}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # versions
@@ -53,7 +54,12 @@ function cluster_init() {
 	if [[ -n "$K8S_VER" && $(grep -c kubernetesVersion ./kubeadm.yaml) -eq 0 ]]; then
 		sed -i "s/ClusterConfiguration/ClusterConfiguration\nkubernetesVersion: ${K8S_VER}/g" ./kubeadm.yaml
 	fi
-	# Config patches
+	if ! [ -z "${CERT_SANS}" ]; then
+		sed -i "/ClusterConfiguration/a apiServer:\\n  certSANs:"  ./kubeadm.yaml
+		for CERT_SAN in ${CERT_SANS[@]}; do
+			sed -i "/certSANs/a \ \ - ${CERT_SAN}" ./kubeadm.yaml
+		 done
+	fi
 	if [[ -n "${HIGH_POD_COUNT}" ]]; then
 		# increase limits in kubelet
 		sed -i "/KubeletConfiguration/a maxOpenFiles\: 1048576" ./kubeadm.yaml
