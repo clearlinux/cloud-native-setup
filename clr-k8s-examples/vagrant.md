@@ -21,6 +21,10 @@ Download the latest Debian package from https://www.vagrantup.com/downloads.html
 sudo dpkg -i vagrant_${VER}_x86_64.deb
 vagrant plugin install vagrant-libvirt
 ```
+Make sure to add the user to the default group
+```bash
+usermod --append --groups libvirt `whoami`
+```
 
 Run vagrant
 ```bash
