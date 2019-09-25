@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+###
+#  create_stack.sh - Intialize a Kubernetes cluster and install components
+##
+
 set -o errexit
 set -o pipefail
 set -o nounset
@@ -10,6 +14,9 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${MASTER_IP:=}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
+# versions
+CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
+K8S_VER="${CLRK8S_K8S_VER:-}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.0}"
 
 function print_usage_exit() {
@@ -49,6 +56,9 @@ function cluster_init() {
 		sed -i "/ClusterConfiguration/a controllerManager:\\n  extraArgs:\\n    node-cidr-mask-size: \"20\"" ./kubeadm.yaml
 	fi
 
+	if [[ -n "$K8S_VER" && $(grep -c kubernetesVersion kubeadm.yaml) -eq 0 ]]; then
+		sed -i "s/ClusterConfiguration/ClusterConfiguration\nkubernetesVersion: ${K8S_VER}/g" kubeadm.yaml
+	fi
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
 	if [[ -d /var/lib/etcd ]]; then
@@ -89,14 +99,19 @@ function kata() {
 
 function cni() {
 	# note version is not semver
-	CANAL_VER=${1:-v3.3}
-	CANAL_URL="https://docs.projectcalico.org/$CANAL_VER/getting-started/kubernetes/installation/hosted/canal"
+	CANAL_VER=${1:-$CANAL_VER}
+	CANAL_URL="https://docs.projectcalico.org/${CANAL_VER}/manifests"
+	if [[ "$CANAL_VER" == "v3.3" ]]; then
+		CANAL_URL="https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal"
+	fi
 	CANAL_DIR="0-canal"
 
 	# canal manifests are not kept in repo but in docs site so use curl
 	mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
 	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
-	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
+	if [[ "$CANAL_VER" == "v3.3" ]]; then
+  		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
+	fi
 	# canal doesnt pass kustomize validation
 	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
 
@@ -189,7 +204,6 @@ function dashboard() {
 	kubectl apply -k "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}"
 }
 
-
 function ingres() {
 	INGRES_VER=${1:-nginx-0.25.1}
 	INGRES_URL="https://github.com/kubernetes/ingress-nginx.git"
@@ -279,6 +293,10 @@ function set_repo_version() {
 	popd
 
 }
+
+###
+# main
+##
 
 declare -A command_handlers
 command_handlers[init]=cluster_init
