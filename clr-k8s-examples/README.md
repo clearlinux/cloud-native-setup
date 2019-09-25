@@ -34,7 +34,9 @@ This script ensures the following
 * Customizes the system to ensure correct defaults are setup (IP Forwarding, Swap off,...)
 * Ensures all the dependencies are loaded on boot (kernel modules)
 
-> NOTE: This step is done automatically if using vagrant.
+> NOTE: This step is done automatically if using vagrant. When running this script, by default
+the RUNNER is set to use crio, if need to be changed make sure to specify the RUNNER to be 
+either crio/containerd. 
 
 ### Configuration for high numbers of pods per node
 
