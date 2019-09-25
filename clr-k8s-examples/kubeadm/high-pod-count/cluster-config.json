@@ -1,0 +1,3 @@
+[
+  {"op": "add", "path": "/controllerManager", "value": {"extraArgs": {"node-cidr-mask-size": "20"}}}
+]
