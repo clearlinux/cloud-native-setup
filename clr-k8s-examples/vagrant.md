@@ -26,6 +26,11 @@ Run vagrant
 sudo vagrant up --provider=libvirt
 ```
 
+Note, in order to spin up vagrant to use different CPU and MEMORY for individual VM's:
+```bash
+CPU=4 MEMORY=8096 vagrant up clr-01 --provider=libvirt
+```
+
 Note, vagrant installation steps were derived from:
 * https://computingforgeeks.com/install-kvm-centos-rhel-ubuntu-debian-sles-arch/
 * https://computingforgeeks.com/using-vagrant-with-libvirt-on-linux/
