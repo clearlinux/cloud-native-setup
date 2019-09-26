@@ -18,6 +18,7 @@ HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.0}"
+METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -118,7 +119,7 @@ function cni() {
 }
 
 function metrics() {
-	METRICS_VER=${1:-v0.3.3}
+	METRICS_VER="${1:-$METRICS_VER}"
 	METRICS_URL="https://github.com/kubernetes-incubator/metrics-server.git"
 	METRICS_DIR="1-core-metrics"
 	get_repo "${METRICS_URL}" "${METRICS_DIR}/overlays/${METRICS_VER}"
