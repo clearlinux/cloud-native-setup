@@ -19,6 +19,7 @@ CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.0}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
+PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -111,7 +112,7 @@ function cni() {
 	mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
 	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
 	if [[ "$CANAL_VER" == "v3.3" ]]; then
-  		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
+		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
 	fi
 	# canal doesnt pass kustomize validation
 	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
@@ -178,7 +179,7 @@ function storage() {
 }
 
 function monitoring() {
-	PROMETHEUS_VER=${1:-v0.1.0}
+	PROMETHEUS_VER=${1:-$PROMETHEUS_VER}
 	PROMETHEUS_URL="https://github.com/coreos/kube-prometheus.git"
 	PROMETHEUS_DIR="4-kube-prometheus"
 	get_repo "${PROMETHEUS_URL}" "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}"
