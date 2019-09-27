@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) 2019 Intel Corporation
-# 
+#
 # SPDX-License-Identifier: Apache-2.0
 #
 # Measure pod create and delete times whilst launching
@@ -12,24 +12,13 @@ set -e
 # Pull in some common, useful, items
 SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_PATH}/../lib/common.bash"
+source "${SCRIPT_PATH}/common.bash"
 
-input_yaml="${SCRIPT_PATH}/bb.yaml.in"
-input_json="${SCRIPT_PATH}/bb.json.in"
-generated_yaml="${SCRIPT_PATH}/generated.yaml"
-generated_json="${SCRIPT_PATH}/generated.json"
-deployment="busybox"
-
-NUM_PODS=${NUM_PODS:-20}
-STEP=${STEP:-1}
-
-LABEL=${LABEL:-magiclabel}
 LABELVALUE=${LABELVALUE:-parallel}
 
-# sleep and timeout times for k8s actions, in seconds
-wait_time=${wait_time:-30}
-delete_wait_time=${delete_wait_time:-600}
-use_api=${use_api:-yes}
-grace=${grace:-30}
+scaling_common_vars
+
+pod_command="[\"tail\", \"-f\", \"/dev/null\"]"
 
 # Set some default metrics env vars
 TEST_ARGS="runtime=${RUNTIME}"
@@ -80,6 +69,7 @@ warmup() {
 		-e "s|@LABEL@|${LABEL}|g" \
 		-e "s|@LABELVALUE@|${LABELVALUE}|g" \
 		-e "s|@GRACE@|${grace}|g" \
+		-e "s#@PODCOMMAND@#${pod_command}#g" \
 		< ${input_yaml} > ${generated_yaml}
 
 	info "Applying warmup pod"
@@ -198,6 +188,7 @@ run() {
 			-e "s|@LABEL@|${LABEL}|g" \
 			-e "s|@LABELVALUE@|${LABELVALUE}|g" \
 			-e "s|@GRACE@|${grace}|g" \
+		        -e "s#@PODCOMMAND@#${pod_command}#g" \
 			< ${input_template} > ${generated_file}
 
 		info "Applying changes"
@@ -294,4 +285,3 @@ main() {
 }
 
 main "$@"
-

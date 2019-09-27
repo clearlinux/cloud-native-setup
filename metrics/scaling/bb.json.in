@@ -28,11 +28,7 @@
                 "containers": [{
                     "name": "bb",
                     "image": "busybox",
-                    "command": [
-                        "tail",
-                        "-f",
-                        "/dev/null"
-                    ],
+                    "command": @PODCOMMAND@,
                     "stdin": true,
                     "tty": true
                 }],
