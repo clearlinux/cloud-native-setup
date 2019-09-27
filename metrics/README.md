@@ -25,3 +25,102 @@ function in that file has the ability to also `curl` or `socat` the JSON results
 by environment variables (see the file source for details). This method has been used to store results in
 Elasticsearch and InfluxDB databases for instance, but should be adaptable to use with any REST API that accepts
 JSON input.
+
+## Scaling execution
+This section describes a complete step-by-step scaling execution upto results reporting by using `scaling/k8s_scale.sh` tool which launches a series of workloads and take memory metric measurements after each launch.
+
+**Requirements**
+* A Kubernetes cluster up and running (tested on v1.15.3).
+* `bc` and `jq` packages.
+* Docker (only for report generation).
+
+The steps to execute a run of the scaling framework are listed below, which need to be executed on the master node of a Kubernetes cluster to avoid network issues:
+1. Clone `cloud-native-setup` repository into a preferred directory and change directory upto `cloud-native-setup/metrics`:
+   ```sh
+   $ git clone https://github.com/clearlinux/cloud-native-setup.git
+   $ cd cloud-native-setup/metrics
+   ```
+2. Launch the execution by:
+   ```sh
+   $ ./scaling/k8s_scale.sh
+   INFO: Initialising
+   command: bc: yes
+   command: jq: yes
+   INFO: Checking k8s accessible
+   INFO: 1 k8s nodes in 'Ready' state found
+   starting kubectl proxy
+   Starting to serve on 127.0.0.1:8090
+   daemonset.apps/stats created
+   Waiting for daemon set "stats" rollout to finish: 0 of 1 updated pods are available...
+   daemon set "stats" successfully rolled out
+   INFO: Running test
+   INFO: And grab some stats
+   INFO: idle [98.49] free [29031100] launch [0] node [clr-30f01b5149ba4ab8b05a7ee03b6812a5] inodes_free [31103039]
+   INFO: Testing replicas 1 of 20
+   INFO: Content of runtime_command=:/@RUNTIMECLASS@/d
+   ...
+   ```
+The above execution might take about 4min because it launch upto 20 pods by default and takes measurements for CPU utilization, memory utilization and pod boot time, finally it will generate a `k8s-scaling.json` result file at `result` directory.
+
+**Note**: by default the scaling framework makes call to the Kubernetes API directly so, if facing conectivity issues verify that `kubelet` service's proxies and `no_proxy` environment variable are properly setup.
+
+**Note**: by default the scaling framework uses default values for all its required variables, which can be checked through `scaling/k8s_scale.sh -h` and updated when launching the execution, i.e.:
+```
+$ ./scaling/k8s_scale.sh -h
+Usage: ./scaling/k8s_scale.sh [-h] [options]
+   Description:
+	Launch a series of workloads and take memory metric measurements after
+	each launch.
+   Options:
+		-h,    Help page.
+
+Environment variables:
+	Name (default)
+		Description
+	TEST_NAME (k8s scaling)
+		Can be set to over-ride the default JSON results filename
+	NUM_PODS (20)
+		Number of pods to launch
+	STEP (1)
+		Number of pods to launch per cycle
+	wait_time (30)
+		Seconds to wait for pods to become ready
+	delete_wait_time (600)
+		Seconds to wait for all pods to be deleted
+	settle_time (5)
+		Seconds to wait after pods ready before taking measurements
+	use_api (yes)
+		specify yes or no to use the API to launch pods
+	grace (30)
+		specify the grace period in seconds for workload pod termination
+
+$ use_api=no ./scaling/k8s_scale.sh
+```
+
+The steps to generate the result report are listed below:
+
+1. Having the `results/k8s-scaling.json` result file, create a subdirectory in the `results` directory with a preferred name and copy the `k8s-scaling.json` file into it, so the file distribution looks like:
+   ```sh
+   $ tree result
+   results/
+   └── scaling
+       └── k8s-scaling.json
+   ```
+2. Launch the report generation by:
+   ```sh
+   ./report/makereport.sh
+   ```
+   **Note**: the first time you launch the report generation it will build a docker container to generate the reports and this process can take several minutes. Subsequent runs will be much faster.
+
+   The above execution will generate a `report/output` directory with the final reports, such as:
+   ```sh
+   $ tree report/output/
+   report/output/
+   ├── dut-1.png
+   ├── metrics_report.pdf
+   ├── scaling-1.png
+   ├── scaling-2.png
+   ├── scaling-3.png
+   └── scaling-4.png
+   ```
+More details about result reporting can be reviewed at [`report`](./report) directory.
