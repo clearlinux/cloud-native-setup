@@ -67,3 +67,22 @@ init_env()
 	# been deliberately injected into the cluster under test.
 }
 
+# finds elements in $1 that are not in $2
+find_unique_pods() {
+	local list_a=$1
+	local list_b=$2
+
+	new_pods=()
+	for a in $list_a; do
+			local in_b=false
+				for b in $list_b; do
+					if [[ $a == $b ]]; then
+							in_b=true
+								break
+						fi
+				done
+				if [[ $in_b == false ]]; then
+					new_pods[${#new_pods[@]}]=$a
+				fi
+		done
+}

@@ -11,21 +11,33 @@ SCRIPT_PATH=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_PATH}/../lib/common.bash"
 source "${SCRIPT_PATH}/common.bash"
 
-LABELVALUE=${LABELVALUE:-scale}
+LABELVALUE=${LABELVALUE:-scale_nc}
 
 scaling_common_vars
 
-pod_command="[\"tail\", \"-f\", \"/dev/null\"]"
+# Latency test parameters:
+# number of requests to be sent to each pod
+nc_reqs_per_pod=${nc_reqs_per_pod:-100}
+# length of each request [bytes]
+nc_req_msg_len=${nc_req_msg_len:-1000}
+# port that request servers listen to in pods
+nc_port=33101
+# request message
+nc_req_msg=$(head -c $nc_req_msg_len /dev/zero | tr  '\0' 'x')
+
+pod_command="[\"nc\", \"-lk\", \"-p\", \"${nc_port}\", \"-e\", \"/bin/cat\"]"
 
 # Set some default metrics env vars
 TEST_ARGS="runtime=${RUNTIME}"
-TEST_NAME="k8s scaling"
+TEST_NAME="k8s scaling nc"
 
 # $1 is the launch time in seconds this pod/container took to start up.
 # $2 is the number of pod/containers under test
 grab_stats() {
 	local launch_time_ms=$1
 	local n_pods=$2
+	shift ; shift
+	local latency_percentiles=($@) # array of percentiles
 	local cpu_idle=()
 	local mem_free=()
 	local total_mem_used=0
@@ -58,6 +70,20 @@ EOF
 EOF
 	)"
 	metrics_json_add_array_fragment "$launch_json"
+
+	local latency_json="$(cat << EOF
+			"latency_time": {
+				"Pod_command": "${pod_command//\"/\\\"}",
+				"Request_length": "${nc_req_msg_len}",
+				"Requests_per_pod": "${nc_reqs_per_pod}",
+				"Sender": "serial",
+				"Percentiles": [$(IFS=, ; echo "${latency_percentiles[*]}")],
+				"Result": ${latency_percentiles[$(( ${#latency_percentiles[@]} / 2 ))]}",
+				"Units" : "ms"
+			}
+EOF
+	)"
+	metrics_json_add_array_fragment "$latency_json"
 
 	# start the node utilization array
 	metrics_json_start_nested_array
@@ -252,7 +278,7 @@ run() {
 	metrics_json_start_array
 
 	# grab starting stats before launching workload pods
-	grab_stats 0 0
+	grab_stats 0 0 0
 
 	for reqs in $(seq ${STEP} ${STEP} ${NUM_PODS}); do
 		info "Testing replicas ${reqs} of ${NUM_PODS}"
@@ -267,6 +293,7 @@ run() {
 
 		local input_template
 		local generated_file
+
 		if [ "$use_api" != "no" ]; then
 			input_template=$input_json
 			generated_file=$generated_json
@@ -311,7 +338,43 @@ run() {
 		find_unique_pods "${pods_after}" "${pods_before}"
 
 		sleep ${settle_time}
-		grab_stats $total_milliseconds $reqs
+
+		if [[ ${nc_reqs_per_pod} -ge 1 ]]; then
+			pod_ips=$(kubectl get pods --selector ${LABEL}=${LABELVALUE} -o json | jq -r '.items[].status.podIP')
+			if [[ ${reqs} != $(echo $pod_ips | wc -w) ]]; then
+				info "WARNING: pod IP count mismatch expected ${reqs} found $(echo $pod_ips | wc -w)"
+			fi
+			info "Measuring latency, sending ${nc_reqs_per_pod} messages to each of the ${reqs} pods"
+			local latency_failures=0
+			local latency_pod_array=()
+			for latency_round in $(seq ${nc_reqs_per_pod}); do
+				for pod_ip in ${pod_ips}; do
+					local latency_pod_start_time=$(date +%s%N)
+					if [[ $(echo ${nc_req_msg} | nc ${pod_ip} ${nc_port}) != "${nc_req_msg}" ]]; then
+						latency_failures=$(( latency_failures + 1 ))
+					fi
+					local latency_pod_end_time=$(date +%s%N)
+					latency_pod_array+=($(( (latency_pod_end_time - latency_pod_start_time) / 1000000 )))
+				done
+			done
+			IFS=$'\n'
+			local latency_pod_array_sorted=($(sort -n <<<"${latency_pod_array[*]}"))
+			unset IFS
+			local latency_pod_array_len=${#latency_pod_array[@]}
+			local latency_percentiles=()
+			latency_percentiles+=(${latency_pod_array_sorted[$(bc <<<"$latency_pod_array_len / 20")]})
+			latency_percentiles+=(${latency_pod_array_sorted[$(bc <<<"$latency_pod_array_len / 4")]})
+			latency_percentiles+=(${latency_pod_array_sorted[$(bc <<<"$latency_pod_array_len / 2")]})
+			latency_percentiles+=(${latency_pod_array_sorted[$(bc <<<"$latency_pod_array_len / 1.25")]})
+			latency_percentiles+=(${latency_pod_array_sorted[$(bc <<<"$latency_pod_array_len / 1.05")]})
+			info "Latency percentiles [ms] 5-25-50-75-95 %: ${latency_percentiles[*]}"
+		else
+			local latency_avg_ms=0
+			local latency_percentiles=(0 0 0 0 0)
+
+		fi
+
+		grab_stats $total_milliseconds $reqs ${latency_percentiles[@]}
 	done
 }
 
