@@ -17,7 +17,7 @@ HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 # versions
 CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
-ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.0}"
+ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.1}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
 
 function print_usage_exit() {
@@ -111,7 +111,7 @@ function cni() {
 	mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
 	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
 	if [[ "$CANAL_VER" == "v3.3" ]]; then
-  		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
+		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
 	fi
 	# canal doesnt pass kustomize validation
 	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
