@@ -12,6 +12,11 @@ source ${LIB_DIR}/json.bash
 source ${LIB_DIR}/k8s-api.bash
 source /etc/os-release || source /usr/lib/os-release
 
+# Debugging: run "nc -k -l -p 33720" and add breakpoints in scripts:
+# BP="my-breakpoint-1" eval $BP_CALLHOME
+BP_HOME=127.0.0.1 BP_PORT=33720
+BP_CALLHOME='BP_FIFO=/tmp/$BP_HOME.$BP_PORT.$BP; (rm -f $BP_FIFO; mkfifo $BP_FIFO) && (echo "\"c\" continues"; echo -n "($BP) "; tail -f $BP_FIFO) | nc $BP_HOME $BP_PORT | while read cmd; do if test "$cmd" = "c" ; then echo -n "" >$BP_FIFO; sleep 0.1; fuser -k $BP_FIFO >/dev/null 2>&1; break; else eval $cmd >$BP_FIFO 2>&1; echo -n "($BP) "  >$BP_FIFO; fi; done'
+
 die() {
 	local msg="$*"
 	echo "ERROR: $msg" >&2
