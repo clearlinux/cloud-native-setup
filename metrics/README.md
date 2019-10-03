@@ -27,7 +27,7 @@ Elasticsearch and InfluxDB databases for instance, but should be adaptable to us
 JSON input.
 
 ## Scaling execution
-This section describes a complete step-by-step scaling execution upto results reporting by using `scaling/k8s_scale.sh` tool which launches a series of workloads and take memory metric measurements after each launch.
+This section describes a complete step-by-step scaling execution up to results reporting by using `scaling/k8s_scale.sh` tool which launches a series of workloads and take memory metric measurements after each launch.
 
 **Requirements**
 * A Kubernetes cluster up and running (tested on v1.15.3).
@@ -35,7 +35,7 @@ This section describes a complete step-by-step scaling execution upto results re
 * Docker (only for report generation).
 
 The steps to execute a run of the scaling framework are listed below, which need to be executed on the master node of a Kubernetes cluster to avoid network issues:
-1. Clone `cloud-native-setup` repository into a preferred directory and change directory upto `cloud-native-setup/metrics`:
+1. Clone `cloud-native-setup` repository into a preferred directory and change directory up to `cloud-native-setup/metrics`:
    ```sh
    $ git clone https://github.com/clearlinux/cloud-native-setup.git
    $ cd cloud-native-setup/metrics
@@ -60,9 +60,11 @@ The steps to execute a run of the scaling framework are listed below, which need
    INFO: Content of runtime_command=:/@RUNTIMECLASS@/d
    ...
    ```
-The above execution might take about 4min because it launch upto 20 pods by default and takes measurements for CPU utilization, memory utilization and pod boot time, finally it will generate a `k8s-scaling.json` result file at `result` directory.
+The above execution might take about 4min because it launch up to 20 pods by default and takes measurements for CPU utilization, memory utilization and pod boot time, finally it will generate a `k8s-scaling.json` result file at `result` directory.
 
-**Note**: by default the scaling framework makes call to the Kubernetes API directly so, if facing conectivity issues verify that `kubelet` service's proxies and `no_proxy` environment variable are properly setup.
+**Note**: to test the launch of pods concurrently, `k8s_parallel.sh` may be used. For quicker testing, `k8s_scale_rapid.sh` can be used in place of `k8s_scale.sh`. The rest of the launch instructions remain consistent other than script name.
+
+**Note**: by default the scaling framework makes call to the Kubernetes API directly so, if facing connectivity issues verify that `kubelet` service's proxies and `no_proxy` environment variable are properly setup.
 
 **Note**: by default the scaling framework uses default values for all its required variables, which can be checked through `scaling/k8s_scale.sh -h` and updated when launching the execution, i.e.:
 ```
@@ -106,6 +108,10 @@ The steps to generate the result report are listed below:
    └── scaling
        └── k8s-scaling.json
    ```
+
+**Note**: if `k8s_scale_rapid.sh` was run instead of `k8s_scale.sh`, that the `<node_name>.tar.gz` files that appear in the results directory also need to be copied into the newly created subdirectory. And the results file is named `k8s-rapid.json` rather than `k8s-scaling.json`.
+If k8s_parallel.sh was run, the results file is named `k8s-parallel.json` rather than `k8s-scaling.json`.
+
 2. Launch the report generation by:
    ```sh
    ./report/makereport.sh

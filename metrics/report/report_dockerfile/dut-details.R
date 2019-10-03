@@ -16,7 +16,8 @@ suppressMessages(library(jsonlite))			# to load the data.
 # A list of all the known results files we might find the information inside.
 resultsfiles=c(
 	"k8s-parallel.json",
-	"k8s-scaling.json"
+	"k8s-scaling.json",
+	"k8s-rapid.json"
 	)
 
 data=c()

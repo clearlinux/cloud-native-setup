@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: collectd
+spec:
+  selector:
+    matchLabels:
+      name: collectd-pods
+  template:
+    metadata:
+      labels:
+        name: collectd-pods
+    spec:
+      hostNetwork: true
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: collectd
+          image: alpine:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # Run a priv container so we really do measure what is happening on the
+            # host (node) system
+            privileged: true
+          command: ["/bin/sh", "-c"]
+          args:
+            - apk update && apk add collectd;
+              collectd -f;
+          volumeMounts:
+            - name: collectd-config-volume
+              mountPath: /etc/collectd
+            - name: proc
+              mountPath: /mnt/proc
+              readOnly: true
+            - name: root
+              mountPath: /hostfs
+              readOnly: true
+            - name: etc
+              mountPath: /mnt/etc
+              readOnly: true
+            - name: opt
+              mountPath: /mnt/opt
+      volumes:
+        - name: collectd-config-volume
+          configMap:
+            name: collectd-config
+            items:
+              - key: collectd.conf
+                path: collectd.conf
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: root
+          hostPath:
+            path: /
+        - name: etc
+          hostPath:
+            path: /etc
+        - name: opt
+          hostPath:
+            path: /opt
