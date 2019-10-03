@@ -13,8 +13,6 @@ source "${SCRIPT_PATH}/common.bash"
 
 LABELVALUE=${LABELVALUE:-scale}
 
-scaling_common_vars
-
 pod_command="[\"tail\", \"-f\", \"/dev/null\"]"
 
 # Set some default metrics env vars

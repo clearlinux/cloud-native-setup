@@ -13,8 +13,6 @@ source "${SCRIPT_PATH}/common.bash"
 
 LABELVALUE=${LABELVALUE:-scale_nc}
 
-scaling_common_vars
-
 # Latency test parameters:
 # number of requests to be sent to each pod
 nc_reqs_per_pod=${nc_reqs_per_pod:-100}
