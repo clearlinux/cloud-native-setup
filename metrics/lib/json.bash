@@ -56,7 +56,7 @@ EOF
 	$(kubectl get nodes -o=json)
 EOF
 )"
-	metrics_json_add_fragment "$json"
+        metrics_json_add_fragment "$json"
 
 	local json="$(cat << EOF
 	"date" : {

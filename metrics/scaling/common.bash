@@ -28,3 +28,4 @@ grace=${grace:-30}
 declare -a new_pods
 declare -A node_basemem
 declare -A node_baseinode
+declare -A node_numsockets

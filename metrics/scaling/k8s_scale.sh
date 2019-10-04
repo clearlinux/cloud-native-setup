@@ -79,6 +79,10 @@ EOF
 		local mem_free=$(kubectl exec -ti $name -- sh -c "free | tail -2 | head -1 | awk '{print \$4}'" | sed 's/\r//')
 		local inode_free=$(kubectl exec -ti $name -- sh -c "df -i | awk '/^overlay/ {print \$4}'" | sed 's/\r//')
 
+		# Get number of physical sockets per node
+		local num_sockets=$(kubectl exec -ti $name -- sh -c "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l" | sed 's/\r//')
+		info "Num socket at current node: $num_sockets"
+
 		info "idle [$cpu_idle] free [$mem_free] launch [$launch_time_ms] node [$node] inodes_free [$inode_free]"
 
 		# Annoyingly, it seems sometimes once in a while we don't get an answer!
@@ -86,11 +90,13 @@ EOF
 		cpu_idle=${cpu_idle:-0}
 		mem_free=${mem_free:-0}
 		inode_free=${inode_free:-0}
+		num_sockets=${num_sockets:-0}
 
 		# If this is the 0 node instance, store away the base memory value
 		if [ $n_pods -eq 0 ]; then
 			node_basemem[$node]=$mem_free
 			node_baseinode[$node]=$inode_free
+			node_numsockets[$node]=$num_sockets
 		fi
 
 		local mem_used=$((node_basemem[$node]-mem_free))
@@ -103,6 +109,7 @@ EOF
 		local util_json="$(cat << EOF
 		{
 			"node": "${node}",
+			"num_sockets": ${node_numsockets[$node]},
 			"noschedule": "${noschedule}",
 			"cpu_idle": {
 				"Result": ${cpu_idle},
