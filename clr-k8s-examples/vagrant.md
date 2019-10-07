@@ -26,9 +26,9 @@ Run vagrant
 sudo vagrant up --provider=libvirt
 ```
 
-Note, in order to spin up vagrant to use different CPU and MEMORY for individual VM's:
+Note, in order to spin up vagrant to use different CPUS and MEMORY for individual VM's:
 ```bash
-CPU=4 MEMORY=8096 vagrant up clr-01 --provider=libvirt
+CPUS=4 MEMORY=8096 vagrant up clr-01 --provider=libvirt
 ```
 
 Note, vagrant installation steps were derived from:
