@@ -76,7 +76,7 @@ EOF
 				"Requests_per_pod": "${nc_reqs_per_pod}",
 				"Sender": "serial",
 				"Percentiles": [$(IFS=, ; echo "${latency_percentiles[*]}")],
-				"Result": ${latency_percentiles[$(( ${#latency_percentiles[@]} / 2 ))]}",
+				"Result": ${latency_percentiles[$(( ${#latency_percentiles[@]} / 2 ))]},
 				"Units" : "ms"
 			}
 EOF
