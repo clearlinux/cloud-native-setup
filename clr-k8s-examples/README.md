@@ -35,8 +35,8 @@ This script ensures the following
 * Ensures all the dependencies are loaded on boot (kernel modules)
 
 > NOTE: This step is done automatically if using vagrant. The setup_system.sh script uses
-the runtime specified in the RUNNER environment variable and defaults to crio. To use the
-containerd runtime, set the RUNNER environment variable to containerd.
+the runtime specified in the RUNNER environment variable and defaults to `crio`. To use the
+`containerd` runtime, set the RUNNER environment variable to `containerd`.
 
 ### Configuration for high numbers of pods per node
 
