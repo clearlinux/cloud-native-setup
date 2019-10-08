@@ -19,11 +19,16 @@ echo "vhost_net" | sudo tee -a /etc/modules
 Download the latest Debian package from https://www.vagrantup.com/downloads.html and install it followed by vagrant-libvirt
 ```bash
 sudo dpkg -i vagrant_${VER}_x86_64.deb
-sudo vagrant plugin install vagrant-libvirt
+vagrant plugin install vagrant-libvirt
 ```
+Make sure to add the user to the default group
+```bash
+usermod --append --groups libvirt `whoami`
+```
+
 Run vagrant
 ```bash
-sudo vagrant up --provider=libvirt
+vagrant up --provider=libvirt
 ```
 
 Note, in order to spin up vagrant to use different CPUS and MEMORY for individual VM's:
