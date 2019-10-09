@@ -76,6 +76,8 @@ EOF
 )"
 	metrics_json_add_fragment "$json"
 
+	metrics_json_num_sockets_node
+
 	metrics_json_end_of_system
 }
 
@@ -127,6 +129,43 @@ EOF
 
 metrics_json_end_of_system() {
 	system_index=$(( ${#json_result_array[@]}))
+}
+
+# Add a array of number of physical sockets and hypervisor per node within the Kubernetes cluster
+metrics_json_num_sockets_node(){
+
+	metrics_json_start_array
+
+	# grab pods in the stats daemonset
+	while read -u 3 name node; do
+		# gather node information about number of sockets and its hypervisor if any
+		local num_sockets=$(kubectl exec -ti $name -- sh -c "cat /proc/cpuinfo | grep 'physical id' | sort -u | wc -l" | sed 's/\r//')
+		local node_hypervisor=false
+
+		set +e
+		kubectl exec -ti $name -- sh -c "grep -q ^flags.*\ hypervisor\  /proc/cpuinfo"
+
+		if [ $? -eq 0 ]; then
+			node_hypervisor=true
+		fi
+		set -e
+
+		local util_json="$(cat << EOF
+		{
+			"node": "${node}",
+			"num_sockets": ${num_sockets},
+			"hypervisor" : "${node_hypervisor}"
+		}
+EOF
+		)"
+
+
+		metrics_json_add_array_element "$util_json"
+
+	done 3< <(kubectl get pods --selector name=stats-pods -o json | jq -r '.items[] | "\(.metadata.name) \(.spec.nodeName)"')
+
+	# write node's information into json output
+	metrics_json_end_array "socketsPerNode"
 }
 
 # Add a top level (complete) JSON fragment to the data
