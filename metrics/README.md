@@ -46,8 +46,8 @@ The steps to execute a run of the scaling framework are listed below, which need
    INFO: Initialising
    command: bc: yes
    command: jq: yes
-   INFO: Checking k8s accessible
-   INFO: 1 k8s nodes in 'Ready' state found
+   INFO: Checking Kubernetes accessible
+   INFO: 1 Kubernetes nodes in 'Ready' state found
    starting kubectl proxy
    Starting to serve on 127.0.0.1:8090
    daemonset.apps/stats created
