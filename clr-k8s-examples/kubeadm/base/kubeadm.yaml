@@ -1,8 +1,12 @@
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
+metadata:
+  name: init-config
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+metadata:
+  name: kubelet-config
 cgroupDriver: systemd
 # Allowing for CPU pinning and isolation in case of guaranteed QoS class
 cpuManagerPolicy: static
@@ -15,6 +19,8 @@ kubeReserved:
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
+metadata:
+  name: cluster-config
 networking:
   dnsDomain: cluster.local
   podSubnet: 10.244.0.0/16
