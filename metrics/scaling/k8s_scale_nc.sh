@@ -220,13 +220,13 @@ init() {
 	local cmds=("bc" "jq")
 	check_cmds "${cmds[@]}"
 
-	info "Checking k8s accessible"
+	info "Checking Kubernetes accessible"
 	local worked=$( kubectl get nodes > /dev/null 2>&1 && echo $? || echo $? )
 	if [ "$worked" != 0 ]; then
 		die "kubectl failed to get nodes"
 	fi
 
-	info $(get_num_nodes) "k8s nodes in 'Ready' state found"
+	info $(get_num_nodes) "Kubernetes nodes in 'Ready' state found"
 	# We could check we have just the one node here - right now this is a single node
 	# test!! - because, our stats gathering is rudimentry, as k8s does not provide
 	# a nice way to do it (unless you want to parse 'descibe nodes')

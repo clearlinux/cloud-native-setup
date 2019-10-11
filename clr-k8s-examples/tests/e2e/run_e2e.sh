@@ -39,10 +39,10 @@ cd $GOPATH/src/k8s.io
 if [ -d kubernetes ]
 then
     cd kubernetes
-    echo Checking status of existing k8s repo clone
+    echo Checking status of existing Kubernetes repo clone
     git status kubernetes
 else
-    echo Cloning upstream k8s repo
+    echo Cloning upstream Kubernetes repo
     git clone https://github.com/kubernetes/kubernetes.git
     cd kubernetes
 fi
