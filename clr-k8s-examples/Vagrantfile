@@ -21,7 +21,7 @@ $hosts = {}
 $proxy_ip_list = "192.168.121.0/24"
 $driveletters = ('a'..'z').to_a
 $setup_fc = true ? (['true', '1'].include? ENV['SETUP_FC'].to_s) : false
-$runner = ENV.has_key?('RUNNER') ? ENV['RUNNER'].to_s : "containerd".to_s
+$runner = ENV.has_key?('RUNNER') ? ENV['RUNNER'].to_s : "crio".to_s
 $high_pod_count = ENV.has_key?('HIGH_POD_COUNT') ? ENV['HIGH_POD_COUNT'].to_s : ""
 if !(["crio","containerd"].include? $runner)
   abort("it's either crio or containerd. Cannot do anything else")
