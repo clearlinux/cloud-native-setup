@@ -33,6 +33,8 @@ cleanup_stats() {
 	# get logs before shutting down stats daemonset
 	while read -u 3 name node; do
 		kubectl exec -ti $name -- sh -c "cd /opt/collectd; tar -czvf localhost.tar.gz localhost"
+		# make a backup on the host in-case collection fail
+		kubectl exec -ti $name -- sh -c "cp /opt/collectd/localhost.tar.gz /mnt/opt/collectd/localhost.tar.gz"
 		kubectl cp $name:/opt/collectd/localhost.tar.gz ${RESULT_DIR}/${node}.tar.gz
 	done 3< <(kubectl get pods --selector name=collectd-pods -o json | jq -r '.items[] | "\(.metadata.name) \(.spec.nodeName)"')
 
