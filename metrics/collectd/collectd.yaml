@@ -19,7 +19,7 @@ spec:
       terminationGracePeriodSeconds: 0
       containers:
         - name: collectd
-          image: alpine:latest
+          image: dklyle/alpine-collectd:1.0
           imagePullPolicy: IfNotPresent
           securityContext:
             # Run a priv container so we really do measure what is happening on the
@@ -27,8 +27,7 @@ spec:
             privileged: true
           command: ["/bin/sh", "-c"]
           args:
-            - apk update && apk add collectd;
-              collectd -f;
+            - collectd -f;
           volumeMounts:
             - name: collectd-config-volume
               mountPath: /etc/collectd
