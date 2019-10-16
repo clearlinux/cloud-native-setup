@@ -64,11 +64,15 @@ shell within the running `Dockerfile` image used to generate the report, whilst 
 mapping your host side `R` scripts from the `report_dockerfile` subdirectory into the
 container, thus facilitating a 'live' edit/reload/run development cycle.
 From there you can examine the Docker image environment, and execute the generation scripts.
+
 E.g., to test the `tidy_scaling.R` script, you can execute:
 
 ```bash
-$ makereport.sh -d
-# R
+$ ./makereport.sh -d
+...
+Successfully built eea7d6ac6fa7
+Successfully tagged metrics-report:latest
+root@<hostname>:/# R
 > source('/inputdir/Env.R')
 > source('/scripts/tidy_scaling.R')
 ## Edit script on host, and re-load/run...
