@@ -28,9 +28,6 @@ TEST_NAME="k8s rapid"
 grab_stats() {
 	local launch_time_ms=$1
 	local n_pods=$2
-	local cpu_idle=()
-	local mem_free=()
-	local total_mem_used=0
 
 	info "And grab some stats"
 
@@ -61,39 +58,7 @@ EOF
 	)"
 	metrics_json_add_array_fragment "$launch_json"
 
-	# start the node utilization array
-	metrics_json_start_nested_array
-
-	# TODO move tracking of noschedule tracking to collectd plugin or pull from system setup data
-	# grab pods in the collectd daemonset
-	# use 3 for the file descriptor rather than stdin otherwise the sh commands
-	# in the middle will read the rest of stdin
-	while read -u 3 name node; do
-		# look for taint that prevents scheduling
-		local noschedule=false
-		local t_match_values=$(kubectl get node ${node} -o json | jq 'select(.spec.taints) | .spec.taints[].effect == "NoSchedule"')
-		for v in $t_match_values; do
-			if [[ $v == true ]]; then
-				noschedule=true
-				break
-			fi
-		done
-
-		info "launch [$launch_time_ms]"
-
-		local util_json="$(cat << EOF
-		{
-			"node": "${node}",
-			"noschedule": "${noschedule}"
-		}
-EOF
-		)"
-
-		metrics_json_add_nested_array_element "$util_json"
-
-	done 3< <(kubectl get pods --selector name=collectd-pods -o json | jq -r '.items[] | "\(.metadata.name) \(.spec.nodeName)"')
-
-	metrics_json_end_nested_array "node_util"
+	info "launch [$launch_time_ms]"
 
 	metrics_json_close_array_element
 }

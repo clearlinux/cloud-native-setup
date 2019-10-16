@@ -62,6 +62,28 @@ for (currentdir in resultdirs) {
 
 			# Import the data
 			fdata=fromJSON(fname)
+
+			# determine whether NoSchedule taint is present for each node
+			# from the 'kubectl get nodes' data dump in the json
+			node_sched_data=list()
+			nodes=c()
+			num_nodes=nrow(fdata$'kubectl-get-nodes'$items)
+			for(n in seq(num_nodes)){
+				json_node=fdata$'kubectl-get-nodes'$items[n,]
+				json_node_name=json_node$metadata$name
+				taints=data.frame(json_node$spec$taints)
+				nosched = "false"
+				if(nrow(taints) > 0) {
+					for(t in seq(nrow(taints))){
+						if(taints[t,]$effect == "NoSchedule") {
+							nosched = "true"
+							break
+						}
+					}
+				}
+				node_sched_data[json_node_name] = nosched
+			}
+
 			# De-nest the test name specific data
 			shortname=substr(ffound, 1, nchar(ffound)-nchar(".json"))
 			fdata=fdata[[shortname]]
@@ -82,45 +104,14 @@ for (currentdir in resultdirs) {
 			local_bootdata$epoch = local_bootdata$ns/1000000000
 			local_bootdata$s_offset = local_bootdata$epoch - local_bootdata[1,]$epoch
 
-			########################################################
-			#### Now extract all node performance information ######
-			########################################################
-			nu=br$node_util
-
-			# We need to associate a pod count with each result, but you
-			# get one result per-node, and the JSON does not carry the pod
-			# count in that table. Walk the node util structure, assigning the
-			# n_pods value from the boot results over to the list of node util
-			# entries associated with it - creating a new 'n_pods' field in the
-			# node util dataframe.
-			for (n in seq(length(br$n_pods$Result))) {
-				nu[[n]]$n_pods = br$n_pods$Result[[n]]
-			}
-
-			# node_util is a list of nested data frames. I'm sure there is some better R'ish
-			# way of extracting this data maybe with dplyr, map, select or melt, but I can't
-			# work it out right now, and at least this is semi-readable...
-			#
-			# Basically, we are de-listing and flattening the lists of dataframes into a
-			# singly 'tidy' dataframe...
-			nodes=do.call("rbind", lapply(nu, "[", "node"))
-			noschedule=do.call("rbind", lapply(nu, "[", "noschedule"))
-			n_pods=do.call("rbind", lapply(nu, "[", "n_pods"))
-
-			# and build our rows
-			local_nodedata=tibble(node=nodes$node)
-			local_nodedata=cbind(local_nodedata, n_pods=n_pods)
-			local_nodedata=cbind(local_nodedata, noschedule=noschedule)
-			local_nodedata=cbind(local_nodedata, testname=rep(testname, length(local_nodedata$node)))
-
 			# Now Calculate some stats. This gets more complicated as we may have n-nodes,
 			# and we want to show a 'pod average', so we try to assess for all nodes. If
 			# we have different 'size' nodes in a cluster, that could throw out the result,
 			# but the only other option would be to try and show every node separately in the
 			# table.
 
-			# Get a list of all the nodes
-			nodes=unique(local_nodedata$node)
+			# Get a list of all the nodes from the schedule data list
+			nodes=names(node_sched_data)
 
 			memtotal=0
 			cputotal=0
@@ -134,9 +125,6 @@ for (currentdir in resultdirs) {
 			interface_errors_data=c()
 			# Calculate per-node totals, and tot them up to a global total.
 			for (n in nodes) {
-				# Make a frame with just that nodes data in
-				thisnode=subset(local_nodedata, node %in% c(n))
-
 				# check if collectd node data has been untarred yet, if not untar
 				node_dir=paste(inputdir, currentdir, n, sep="")
 				if ( !file.exists(node_dir)) {
@@ -156,12 +144,9 @@ for (currentdir in resultdirs) {
 				mem_free_csv=paste(memory_dir, files[1], sep="/")
 				node_mem_free_data=read.csv(mem_free_csv, header=TRUE, sep=",")
 				node_mem_free_data=cbind(node_mem_free_data,
-							 node=rep(n, length(node_mem_free_data$value)))
+										 node=rep(n, length(node_mem_free_data$value)))
 				node_mem_free_data=cbind(node_mem_free_data,
-							 noschedule=rep(thisnode[1,]$noschedule,
-											length(node_mem_free_data$value)))
-				node_mem_free_data=cbind(node_mem_free_data,
-							 testname=rep(testname, length(node_mem_free_data$value)))
+										 testname=rep(testname, length(node_mem_free_data$value)))
 				node_mem_free_data$s_offset = node_mem_free_data$epoch - local_bootdata[1,]$epoch
 
 				mem_free_data=rbind(mem_free_data, node_mem_free_data)
@@ -175,12 +160,9 @@ for (currentdir in resultdirs) {
 				cpu_idle_csv=paste(cpu_dir, files[1], sep="/")
 				node_cpu_idle_data=read.csv(cpu_idle_csv, header=TRUE, sep=",")
 				node_cpu_idle_data=cbind(node_cpu_idle_data,
-							 node=rep(n, length(node_cpu_idle_data$value)))
+										 node=rep(n, length(node_cpu_idle_data$value)))
 				node_cpu_idle_data=cbind(node_cpu_idle_data,
-							 noschedule=rep(thisnode[1,]$noschedule,
-											length(node_cpu_idle_data$value)))
-				node_cpu_idle_data=cbind(node_cpu_idle_data,
-							 testname=rep(testname, length(node_cpu_idle_data$value)))
+										 testname=rep(testname, length(node_cpu_idle_data$value)))
 				node_cpu_idle_data$s_offset = node_cpu_idle_data$epoch - local_bootdata[1,]$epoch
 
 				cpu_idle_data=rbind(cpu_idle_data, node_cpu_idle_data)
@@ -193,12 +175,9 @@ for (currentdir in resultdirs) {
 				inode_free_csv=paste(inode_dir, files[1], sep="/")
 				node_inode_free_data=read.csv(inode_free_csv, header=TRUE, sep=",")
 				node_inode_free_data=cbind(node_inode_free_data,
-							   node=rep(n, length(node_inode_free_data$value)))
+										   node=rep(n, length(node_inode_free_data$value)))
 				node_inode_free_data=cbind(node_inode_free_data,
-							   noschedule=rep(thisnode[1,]$noschedule,
-									  length(node_inode_free_data$value)))
-				node_inode_free_data=cbind(node_inode_free_data,
-							   testname=rep(testname, length(node_inode_free_data$value)))
+										   testname=rep(testname, length(node_inode_free_data$value)))
 				node_inode_free_data$s_offset = node_inode_free_data$epoch - local_bootdata[1,]$epoch
 
 				inode_free_data=rbind(inode_free_data, node_inode_free_data)
@@ -216,16 +195,13 @@ for (currentdir in resultdirs) {
 					interface_packets_csv=paste(interface_dir, files[1], sep="/")
 					node_interface_packets_data=read.csv(interface_packets_csv, header=TRUE, sep=",")
 					node_interface_packets_data=cbind(node_interface_packets_data,
-									  node=rep(n, length(node_interface_packets_data$epoch)))
+													  node=rep(n, length(node_interface_packets_data$epoch)))
 					node_interface_packets_data=cbind(node_interface_packets_data,
-									  noschedule=rep(thisnode[1,]$noschedule,
-											 length(node_interface_packets_data$epoch)))
+													  testname=rep(testname,
+																   length(node_interface_packets_data$epoch)))
 					node_interface_packets_data=cbind(node_interface_packets_data,
-									  testname=rep(testname,
-										       length(node_interface_packets_data$epoch)))
-					node_interface_packets_data=cbind(node_interface_packets_data,
-									  name=rep(interface_name,
-										   length(node_interface_packets_data$epoch)))
+													  name=rep(interface_name,
+															   length(node_interface_packets_data$epoch)))
 					node_interface_packets_data$s_offset = node_interface_packets_data$epoch - local_bootdata[1,]$epoch
 
 					interface_packets_data=rbind(interface_packets_data, node_interface_packets_data)
@@ -236,16 +212,13 @@ for (currentdir in resultdirs) {
 					interface_octets_csv=paste(interface_dir, files[1], sep="/")
 					node_interface_octets_data=read.csv(interface_octets_csv, header=TRUE, sep=",")
 					node_interface_octets_data=cbind(node_interface_octets_data,
-									 node=rep(n, length(node_interface_octets_data$epoch)))
+													 node=rep(n, length(node_interface_octets_data$epoch)))
 					node_interface_octets_data=cbind(node_interface_octets_data,
-									 noschedule=rep(thisnode[1,]$noschedule,
-													length(node_interface_octets_data$epoch)))
+													 testname=rep(testname,
+																  length(node_interface_octets_data$epoch)))
 					node_interface_octets_data=cbind(node_interface_octets_data,
-									 testname=rep(testname,
-												  length(node_interface_octets_data$epoch)))
-					node_interface_octets_data=cbind(node_interface_octets_data,
-									 name=rep(interface_name,
-										  length(node_interface_octets_data$epoch)))
+													 name=rep(interface_name,
+															  length(node_interface_octets_data$epoch)))
 					node_interface_octets_data$s_offset = node_interface_octets_data$epoch - local_bootdata[1,]$epoch
 
 					interface_octets_data=rbind(interface_octets_data, node_interface_octets_data)
@@ -256,16 +229,13 @@ for (currentdir in resultdirs) {
 					interface_dropped_csv=paste(interface_dir, files[1], sep="/")
 					node_interface_dropped_data=read.csv(interface_dropped_csv, header=TRUE, sep=",")
 					node_interface_dropped_data=cbind(node_interface_dropped_data,
-									  node=rep(n, length(node_interface_dropped_data$epoch)))
+													  node=rep(n, length(node_interface_dropped_data$epoch)))
 					node_interface_dropped_data=cbind(node_interface_dropped_data,
-									  noschedule=rep(thisnode[1,]$noschedule,
-											 length(node_interface_dropped_data$epoch)))
+													  testname=rep(testname,
+																   length(node_interface_dropped_data$epoch)))
 					node_interface_dropped_data=cbind(node_interface_dropped_data,
-									  testname=rep(testname,
-												   length(node_interface_dropped_data$epoch)))
-					node_interface_dropped_data=cbind(node_interface_dropped_data,
-									  name=rep(interface_name,
-											   length(node_interface_dropped_data$epoch)))
+													  name=rep(interface_name,
+															   length(node_interface_dropped_data$epoch)))
 					node_interface_dropped_data$s_offset = node_interface_dropped_data$epoch - local_bootdata[1,]$epoch
 
 					interface_dropped_data=rbind(interface_dropped_data, node_interface_dropped_data)
@@ -276,16 +246,13 @@ for (currentdir in resultdirs) {
 					interface_errors_csv=paste(interface_dir, files[1], sep="/")
 					node_interface_errors_data=read.csv(interface_errors_csv, header=TRUE, sep=",")
 					node_interface_errors_data=cbind(node_interface_errors_data,
-									 node=rep(n, length(node_interface_errors_data$epoch)))
+													 node=rep(n, length(node_interface_errors_data$epoch)))
 					node_interface_errors_data=cbind(node_interface_errors_data,
-									 noschedule=rep(thisnode[1,]$noschedule,
-													length(node_interface_errors_data$epoch)))
+													 testname=rep(testname,
+																  length(node_interface_errors_data$epoch)))
 					node_interface_errors_data=cbind(node_interface_errors_data,
-									 testname=rep(testname,
-												  length(node_interface_errors_data$epoch)))
-					node_interface_errors_data=cbind(node_interface_errors_data,
-									 name=rep(interface_name,
-											  length(node_interface_errors_data$epoch)))
+													 name=rep(interface_name,
+															  length(node_interface_errors_data$epoch)))
 					node_interface_errors_data$s_offset = node_interface_errors_data$epoch - local_bootdata[1,]$epoch
 
 					interface_errors_data=rbind(interface_errors_data, node_interface_errors_data)
@@ -293,7 +260,7 @@ for (currentdir in resultdirs) {
 
 				# Do not use the master (non-schedulable) nodes to calculate
 				# launched pod metrics
-				if(thisnode[1,]$noschedule == "true") {
+				if(node_sched_data[n] == "true") {
 					next
 				}
 
@@ -409,19 +376,19 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(memstats),
 #mem_sec_axis_scale=
 mem_line_plot <- ggplot() +
 	geom_line(data=memfreedata,
-		  aes(s_offset, mem_free_gb, colour=interaction(testname, node),
-		      group=interaction(testname, node)),
-		  alpha=0.3) +
+			  aes(s_offset, mem_free_gb, colour=interaction(testname, node),
+				  group=interaction(testname, node)),
+			  alpha=0.3) +
 	geom_point(data=memfreedata,
-		   aes(s_offset, mem_free_gb, colour=interaction(testname, node),
-		       group=interaction(testname, node)),
-		   alpha=0.5, size=0.5) +
+			   aes(s_offset, mem_free_gb, colour=interaction(testname, node),
+				   group=interaction(testname, node)),
+			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("System Avail (Gb)") +
@@ -446,19 +413,19 @@ cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cpustats),
 
 cpu_line_plot <- ggplot() +
 	geom_line(data=cpuidledata,
-		  aes(x=s_offset, y=value, colour=interaction(testname, node),
-		      group=interaction(testname, node)),
-		  alpha=0.3) +
+			  aes(x=s_offset, y=value, colour=interaction(testname, node),
+				  group=interaction(testname, node)),
+			  alpha=0.3) +
 	geom_point(data=cpuidledata,
-		   aes(x=s_offset, y=value, colour=interaction(testname, node),
-		       group=interaction(testname, node)),
-		   alpha=0.5, size=0.5) +
+			   aes(x=s_offset, y=value, colour=interaction(testname, node),
+				   group=interaction(testname, node)),
+			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./cpu_scale, name="pods")) +
 	xlab("seconds") +
@@ -483,8 +450,8 @@ boot_stats_plot = suppressWarnings(ggtexttable(data.frame(bootstats),
 
 boot_line_plot <- ggplot() +
 	geom_line(data=podbootdata,
-		  aes(n_pods, launch_time_s, colour=testname, group=testname),
-		  alpha=0.2) +
+			  aes(n_pods, launch_time_s, colour=testname, group=testname),
+			  alpha=0.2) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
@@ -507,19 +474,19 @@ inode_stats_plot = suppressWarnings(ggtexttable(data.frame(inodestats),
 
 inode_line_plot <- ggplot() +
 	geom_line(data=inodefreedata,
-		  aes(x=s_offset, y=value, colour=interaction(testname, node),
-		      group=interaction(testname, node)),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=value, colour=interaction(testname, node),
+				  group=interaction(testname, node)),
+			  alpha=0.2) +
 	geom_point(data=inodefreedata,
-		   aes(x=s_offset, y=value, colour=interaction(testname, node),
-		       group=interaction(testname, node)),
-		   alpha=0.5, size=0.5) +
+			   aes(x=s_offset, y=value, colour=interaction(testname, node),
+				   group=interaction(testname, node)),
+			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("inodes free") +
@@ -539,27 +506,27 @@ cat("\n\n\\pagebreak\n")
 ########## Output interface page packets and octets ##############
 interface_packet_line_plot <- ggplot() +
 	geom_line(data=ifpacketdata,
-		  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		      group=interaction(testname, node, name, "tx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				  group=interaction(testname, node, name, "tx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifpacketdata,
-		   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		       group=interaction(testname, node, name, "tx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				   group=interaction(testname, node, name, "tx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifpacketdata,
-		  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		      group=interaction(testname, node, name, "rx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				  group=interaction(testname, node, name, "rx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifpacketdata,
-		   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		       group=interaction(testname, node, name, "rx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				   group=interaction(testname, node, name, "rx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("packets") +
@@ -569,27 +536,27 @@ interface_packet_line_plot <- ggplot() +
 
 interface_octet_line_plot <- ggplot() +
 	geom_line(data=ifoctetdata,
-		  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		      group=interaction(testname, node, name, "tx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				  group=interaction(testname, node, name, "tx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifoctetdata,
-		   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		       group=interaction(testname, node, name, "tx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				   group=interaction(testname, node, name, "tx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifoctetdata,
-		  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		      group=interaction(testname, node, name, "rx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				  group=interaction(testname, node, name, "rx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifoctetdata,
-		   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		       group=interaction(testname, node, name, "rx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				   group=interaction(testname, node, name, "rx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("octets") +
@@ -610,27 +577,27 @@ cat("\n\n\\pagebreak\n")
 ########## Output interface page drops and errors ##############
 interface_drop_line_plot <- ggplot() +
 	geom_line(data=ifdropdata,
-		  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		      group=interaction(testname, node, name, "tx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				  group=interaction(testname, node, name, "tx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifdropdata,
-		   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		       group=interaction(testname, node, name, "tx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				   group=interaction(testname, node, name, "tx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifdropdata,
-		  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		      group=interaction(testname, node, name, "rx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				  group=interaction(testname, node, name, "rx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=ifdropdata,
-		   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		       group=interaction(testname, node, name, "rx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				   group=interaction(testname, node, name, "rx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
-		  alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("drops") +
@@ -640,28 +607,27 @@ interface_drop_line_plot <- ggplot() +
 
 interface_error_line_plot <- ggplot() +
 	geom_line(data=iferrordata,
-		  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		      group=interaction(testname, node, name, name, "tx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				  group=interaction(testname, node, name, name, "tx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=iferrordata,
-		   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-		       group=interaction(testname, node, name, "tx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+				   group=interaction(testname, node, name, "tx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=iferrordata,
-		  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		      group=interaction(testname, node, name, "rx")),
-		  alpha=0.2, na.rm=TRUE) +
+			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				  group=interaction(testname, node, name, "rx")),
+			  alpha=0.2, na.rm=TRUE) +
 	geom_point(data=iferrordata,
-		   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-		       group=interaction(testname, node, name, "rx")),
-		   alpha=0.5, size=0.5, na.rm=TRUE) +
+			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+				   group=interaction(testname, node, name, "rx")),
+			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
-		  aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"),
-		      group=testname), alpha=0.2) +
+			  aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
 	geom_point(data=podbootdata,
-		   aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"),
-		       group=testname),
-		   alpha=0.3, size=0.5) +
+			   aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("errors") +
