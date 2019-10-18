@@ -140,47 +140,52 @@ for (currentdir in resultdirs) {
 				# filename has date on the end, so look for the right file name
 				freemem_pattern='^memory\\-free'
 				files=list.files(memory_dir, pattern=freemem_pattern)
+				# collectd csv plugin starts a new file for each day of data collected
+				for(file in files) {
+					mem_free_csv=paste(memory_dir, file, sep="/")
+					node_mem_free_data=read.csv(mem_free_csv, header=TRUE, sep=",")
+					node_mem_free_data=cbind(node_mem_free_data,
+											 node=rep(n, length(node_mem_free_data$value)))
+					node_mem_free_data=cbind(node_mem_free_data,
+											 testname=rep(testname, length(node_mem_free_data$value)))
+					node_mem_free_data$s_offset = node_mem_free_data$epoch - local_bootdata[1,]$epoch
 
-				mem_free_csv=paste(memory_dir, files[1], sep="/")
-				node_mem_free_data=read.csv(mem_free_csv, header=TRUE, sep=",")
-				node_mem_free_data=cbind(node_mem_free_data,
-										 node=rep(n, length(node_mem_free_data$value)))
-				node_mem_free_data=cbind(node_mem_free_data,
-										 testname=rep(testname, length(node_mem_free_data$value)))
-				node_mem_free_data$s_offset = node_mem_free_data$epoch - local_bootdata[1,]$epoch
-
-				mem_free_data=rbind(mem_free_data, node_mem_free_data)
+					mem_free_data=rbind(mem_free_data, node_mem_free_data)
+				}
 
 				# grab CPU data
 				cpu_dir=paste(localhost_dir, "aggregation-cpu-average", sep="/")
 				# filename has date on the end, so look for the right file name
 				percent_idle_pattern='^percent\\-idle'
 				files=list.files(cpu_dir, pattern=percent_idle_pattern)
+				for(file in files) {
+					cpu_idle_csv=paste(cpu_dir, file, sep="/")
+					node_cpu_idle_data=read.csv(cpu_idle_csv, header=TRUE, sep=",")
+					node_cpu_idle_data=cbind(node_cpu_idle_data,
+											 node=rep(n, length(node_cpu_idle_data$value)))
+					node_cpu_idle_data=cbind(node_cpu_idle_data,
+											 testname=rep(testname, length(node_cpu_idle_data$value)))
+					node_cpu_idle_data$s_offset = node_cpu_idle_data$epoch - local_bootdata[1,]$epoch
 
-				cpu_idle_csv=paste(cpu_dir, files[1], sep="/")
-				node_cpu_idle_data=read.csv(cpu_idle_csv, header=TRUE, sep=",")
-				node_cpu_idle_data=cbind(node_cpu_idle_data,
-										 node=rep(n, length(node_cpu_idle_data$value)))
-				node_cpu_idle_data=cbind(node_cpu_idle_data,
-										 testname=rep(testname, length(node_cpu_idle_data$value)))
-				node_cpu_idle_data$s_offset = node_cpu_idle_data$epoch - local_bootdata[1,]$epoch
-
-				cpu_idle_data=rbind(cpu_idle_data, node_cpu_idle_data)
+					cpu_idle_data=rbind(cpu_idle_data, node_cpu_idle_data)
+				}
 
 				# grab inode data
 				inode_dir=paste(localhost_dir, "df-root", sep="/")
 				# filename has date on the end, so look for the right file name
 				inode_free_pattern='^df_inodes\\-free'
 				files=list.files(inode_dir, pattern=inode_free_pattern)
-				inode_free_csv=paste(inode_dir, files[1], sep="/")
-				node_inode_free_data=read.csv(inode_free_csv, header=TRUE, sep=",")
-				node_inode_free_data=cbind(node_inode_free_data,
-										   node=rep(n, length(node_inode_free_data$value)))
-				node_inode_free_data=cbind(node_inode_free_data,
-										   testname=rep(testname, length(node_inode_free_data$value)))
-				node_inode_free_data$s_offset = node_inode_free_data$epoch - local_bootdata[1,]$epoch
+				for(file in files) {
+					inode_free_csv=paste(inode_dir, file, sep="/")
+					node_inode_free_data=read.csv(inode_free_csv, header=TRUE, sep=",")
+					node_inode_free_data=cbind(node_inode_free_data,
+											   node=rep(n, length(node_inode_free_data$value)))
+					node_inode_free_data=cbind(node_inode_free_data,
+											   testname=rep(testname, length(node_inode_free_data$value)))
+					node_inode_free_data$s_offset = node_inode_free_data$epoch - local_bootdata[1,]$epoch
 
-				inode_free_data=rbind(inode_free_data, node_inode_free_data)
+					inode_free_data=rbind(inode_free_data, node_inode_free_data)
+				}
 
 				# grab interface data
 				interface_dir_pattern='^interface\\-'
@@ -191,71 +196,79 @@ for (currentdir in resultdirs) {
 
 					# filename has date on the end, so look for the right file name
 					interface_packets_pattern='^if_packets'
-					files=list.files(interface_dir, pattern=interface_packets_pattern)
-					interface_packets_csv=paste(interface_dir, files[1], sep="/")
-					node_interface_packets_data=read.csv(interface_packets_csv, header=TRUE, sep=",")
-					node_interface_packets_data=cbind(node_interface_packets_data,
-													  node=rep(n, length(node_interface_packets_data$epoch)))
-					node_interface_packets_data=cbind(node_interface_packets_data,
-													  testname=rep(testname,
+					int_files=list.files(interface_dir, pattern=interface_packets_pattern)
+					for (int_file in int_files) {
+						interface_packets_csv=paste(interface_dir, int_file, sep="/")
+						node_interface_packets_data=read.csv(interface_packets_csv, header=TRUE, sep=",")
+						node_interface_packets_data=cbind(node_interface_packets_data,
+														  node=rep(n, length(node_interface_packets_data$epoch)))
+						node_interface_packets_data=cbind(node_interface_packets_data,
+														  testname=rep(testname,
+																	   length(node_interface_packets_data$epoch)))
+						node_interface_packets_data=cbind(node_interface_packets_data,
+														  name=rep(interface_name,
 																   length(node_interface_packets_data$epoch)))
-					node_interface_packets_data=cbind(node_interface_packets_data,
-													  name=rep(interface_name,
-															   length(node_interface_packets_data$epoch)))
-					node_interface_packets_data$s_offset = node_interface_packets_data$epoch - local_bootdata[1,]$epoch
+						node_interface_packets_data$s_offset = node_interface_packets_data$epoch - local_bootdata[1,]$epoch
 
-					interface_packets_data=rbind(interface_packets_data, node_interface_packets_data)
+						interface_packets_data=rbind(interface_packets_data, node_interface_packets_data)
+					}
 
 					# filename has date on the end, so look for the right file name
 					interface_octets_pattern='^if_octets'
-					files=list.files(interface_dir, pattern=interface_octets_pattern)
-					interface_octets_csv=paste(interface_dir, files[1], sep="/")
-					node_interface_octets_data=read.csv(interface_octets_csv, header=TRUE, sep=",")
-					node_interface_octets_data=cbind(node_interface_octets_data,
-													 node=rep(n, length(node_interface_octets_data$epoch)))
-					node_interface_octets_data=cbind(node_interface_octets_data,
-													 testname=rep(testname,
+					int_files=list.files(interface_dir, pattern=interface_octets_pattern)
+					for (int_file in int_files) {
+						interface_octets_csv=paste(interface_dir, int_file, sep="/")
+						node_interface_octets_data=read.csv(interface_octets_csv, header=TRUE, sep=",")
+						node_interface_octets_data=cbind(node_interface_octets_data,
+														 node=rep(n, length(node_interface_octets_data$epoch)))
+						node_interface_octets_data=cbind(node_interface_octets_data,
+														 testname=rep(testname,
+																	  length(node_interface_octets_data$epoch)))
+						node_interface_octets_data=cbind(node_interface_octets_data,
+														 name=rep(interface_name,
 																  length(node_interface_octets_data$epoch)))
-					node_interface_octets_data=cbind(node_interface_octets_data,
-													 name=rep(interface_name,
-															  length(node_interface_octets_data$epoch)))
-					node_interface_octets_data$s_offset = node_interface_octets_data$epoch - local_bootdata[1,]$epoch
+						node_interface_octets_data$s_offset = node_interface_octets_data$epoch - local_bootdata[1,]$epoch
 
-					interface_octets_data=rbind(interface_octets_data, node_interface_octets_data)
+						interface_octets_data=rbind(interface_octets_data, node_interface_octets_data)
+					}
 
 					# filename has date on the end, so look for the right file name
 					interface_dropped_pattern='^if_dropped'
-					files=list.files(interface_dir, pattern=interface_dropped_pattern)
-					interface_dropped_csv=paste(interface_dir, files[1], sep="/")
-					node_interface_dropped_data=read.csv(interface_dropped_csv, header=TRUE, sep=",")
-					node_interface_dropped_data=cbind(node_interface_dropped_data,
-													  node=rep(n, length(node_interface_dropped_data$epoch)))
-					node_interface_dropped_data=cbind(node_interface_dropped_data,
-													  testname=rep(testname,
+					int_files=list.files(interface_dir, pattern=interface_dropped_pattern)
+					for (int_file in int_files) {
+						interface_dropped_csv=paste(interface_dir, int_file, sep="/")
+						node_interface_dropped_data=read.csv(interface_dropped_csv, header=TRUE, sep=",")
+						node_interface_dropped_data=cbind(node_interface_dropped_data,
+														  node=rep(n, length(node_interface_dropped_data$epoch)))
+						node_interface_dropped_data=cbind(node_interface_dropped_data,
+														  testname=rep(testname,
+																	   length(node_interface_dropped_data$epoch)))
+						node_interface_dropped_data=cbind(node_interface_dropped_data,
+														  name=rep(interface_name,
 																   length(node_interface_dropped_data$epoch)))
-					node_interface_dropped_data=cbind(node_interface_dropped_data,
-													  name=rep(interface_name,
-															   length(node_interface_dropped_data$epoch)))
-					node_interface_dropped_data$s_offset = node_interface_dropped_data$epoch - local_bootdata[1,]$epoch
+						node_interface_dropped_data$s_offset = node_interface_dropped_data$epoch - local_bootdata[1,]$epoch
 
-					interface_dropped_data=rbind(interface_dropped_data, node_interface_dropped_data)
+						interface_dropped_data=rbind(interface_dropped_data, node_interface_dropped_data)
+					}
 
 					# filename has date on the end, so look for the right file name
 					interface_errors_pattern='^if_errors'
-					files=list.files(interface_dir, pattern=interface_errors_pattern)
-					interface_errors_csv=paste(interface_dir, files[1], sep="/")
-					node_interface_errors_data=read.csv(interface_errors_csv, header=TRUE, sep=",")
-					node_interface_errors_data=cbind(node_interface_errors_data,
-													 node=rep(n, length(node_interface_errors_data$epoch)))
-					node_interface_errors_data=cbind(node_interface_errors_data,
-													 testname=rep(testname,
+					int_files=list.files(interface_dir, pattern=interface_errors_pattern)
+					for (int_file in int_files) {
+						interface_errors_csv=paste(interface_dir, int_file, sep="/")
+						node_interface_errors_data=read.csv(interface_errors_csv, header=TRUE, sep=",")
+						node_interface_errors_data=cbind(node_interface_errors_data,
+														 node=rep(n, length(node_interface_errors_data$epoch)))
+						node_interface_errors_data=cbind(node_interface_errors_data,
+														 testname=rep(testname,
+																	  length(node_interface_errors_data$epoch)))
+						node_interface_errors_data=cbind(node_interface_errors_data,
+														 name=rep(interface_name,
 																  length(node_interface_errors_data$epoch)))
-					node_interface_errors_data=cbind(node_interface_errors_data,
-													 name=rep(interface_name,
-															  length(node_interface_errors_data$epoch)))
-					node_interface_errors_data$s_offset = node_interface_errors_data$epoch - local_bootdata[1,]$epoch
+						node_interface_errors_data$s_offset = node_interface_errors_data$epoch - local_bootdata[1,]$epoch
 
-					interface_errors_data=rbind(interface_errors_data, node_interface_errors_data)
+						interface_errors_data=rbind(interface_errors_data, node_interface_errors_data)
+					}
 				}
 
 				# Do not use the master (non-schedulable) nodes to calculate
