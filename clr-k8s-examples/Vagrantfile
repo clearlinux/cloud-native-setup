@@ -7,7 +7,9 @@ require 'securerandom'
 
 $num_instances = (ENV['NODES'] || 3).to_i
 $cpus = (ENV['CPUS'] || 2).to_i
-$memory = (ENV['MEMORY'] || 4096).to_i
+memory = (ENV['MEMORY'] || 4).to_i
+maxmem = memory + 32
+$memslot = "#{memory}G,slots=2,maxmem=#{maxmem}G"
 $disks = 2
 # Using folder prefix instead of uuid until vagrant-libvirt fixes disk cleanup
 $disk_prefix = File.basename(File.dirname(__FILE__), "/")
@@ -74,10 +76,18 @@ Vagrant.configure("2") do |config|
         lv.nested = true
         lv.loader = $loader
         lv.cpus = $cpus
-        lv.memory = $memory
+        #lv.memory = $memory
         (1..$disks).each do |d|
           lv.storage :file, :device => "hd#{$driveletters[d]}", :path => "disk-#{$disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
         end
+        lv.qemuargs :value => '-machine'
+        lv.qemuargs :value => 'pc,accel=kvm,nvdimm=on'
+        lv.qemuargs :value => '-m'
+        lv.qemuargs :value => $memslot
+        lv.qemuargs :value => '-object'
+        lv.qemuargs :value => 'memory-backend-file,id=mem1,share=on,mem-path=/dev/shm,size=32768M'
+        lv.qemuargs :value => '-device'
+        lv.qemuargs :value => 'nvdimm,id=nvdimm1,memdev=mem1,label-size=2097152'
       end
       if ENV['http_proxy'] || ENV['HTTP_PROXY']
         if Vagrant.has_plugin?("vagrant-proxyconf")
