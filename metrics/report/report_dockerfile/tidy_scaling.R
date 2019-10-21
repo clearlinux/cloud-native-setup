@@ -140,7 +140,7 @@ for (currentdir in resultdirs) {
 					next
 				}
 				memtotal = memtotal + thisnode[nrow(thisnode),]$mem_used
-				cpuused = thisnode[1,]$idle - thisnode[nrow(thisnode),]$idle
+				cpuused = thisnode[nrow(thisnode),]$idle - thisnode[1,]$idle
 				cputotal = cputotal + cpuused
 				inodetotal = inodetotal + thisnode[nrow(thisnode),]$inode_used
 			}
