@@ -30,15 +30,6 @@ cpustats=c()		# Statistics for cpu usage
 bootstats=c()		# Statistics for boot (launch) times
 inodestats=c()		# Statistics for inode usage
 
-# values for scaling the secondary y axes on some graphs
-mem_scale=1
-cpu_scale=1
-inode_scale=1
-ip_scale=1
-oct_scale=1
-drop_scale=1
-error_scale=1
-
 # iterate over every set of results (test run)
 for (currentdir in resultdirs) {
 	# For every results file we are interested in evaluating
@@ -264,42 +255,78 @@ for (currentdir in resultdirs) {
 					next
 				}
 
-				max_free_mem=max(node_mem_free_data$value)
-				min_free_mem=min(node_mem_free_data$value)
+				# get the epoch time of first and last pod launch
+				start_time=local_bootdata$epoch[1]
+				end_time=local_bootdata$epoch[length(local_bootdata$epoch)]
+
+				# get value closest to first pod launch
+				mem_start_index=Position(function(x) x > start_time, node_mem_free_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(mem_start_index)) {
+					mem_start_index = 1
+				} else if (mem_start_index > 1) {
+					mem_start_index = mem_start_index - 1
+				}
+				max_free_mem=node_mem_free_data$value[mem_start_index]
+
+				# get value closest to last pod launch
+				mem_end_index=Position(function(x) x > end_time, node_mem_free_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(mem_end_index)) {
+					mem_end_index = length(node_mem_free_data$epoch)
+				} else if (mem_end_index > 1) {
+					mem_end_index = mem_end_index - 1
+				}
+				min_free_mem=node_mem_free_data$value[mem_end_index]
+
 				memtotal = memtotal + (max_free_mem - min_free_mem)
-				max_idle_cpu=max(node_cpu_idle_data$value)
-				min_idle_cpu=min(node_cpu_idle_data$value)
+
+				# get value closest to first pod launch
+				cpu_start_index=Position(function(x) x > start_time, node_cpu_idle_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(cpu_start_index)) {
+					cpu_start_index = 1
+				} else if (cpu_start_index > 1) {
+					cpu_start_index = cpu_start_index - 1
+				}
+				max_idle_cpu=node_cpu_idle_data$value[cpu_start_index]
+
+				# get value closest to last pod launch
+				cpu_end_index=Position(function(x) x > end_time, node_cpu_idle_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(cpu_end_index)) {
+					cpu_end_index = length(node_cpu_idle_data$epoch)
+				} else if (cpu_end_index > 1) {
+					cpu_end_index = cpu_end_index - 1
+				}
+				min_idle_cpu=node_cpu_idle_data$value[cpu_end_index]
+
 				cputotal = cputotal + (max_idle_cpu - min_idle_cpu)
-				max_free_inode=max(node_inode_free_data$value)
-				min_free_inode=min(node_inode_free_data$value)
+
+				# get value closest to first pod launch
+				inode_start_index=Position(function(x) x > start_time, node_inode_free_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(inode_start_index)) {
+					inode_start_index = 1
+				} else if (inode_start_index > 1) {
+					inode_start_index = inode_start_index - 1
+				}
+				max_free_inode=node_inode_free_data$value[inode_start_index]
+
+				# get value closest to last pod launch
+				inode_end_index=Position(function(x) x > end_time, node_inode_free_data$epoch)
+				# take the reading previous to the index as long as a valid index
+				if (is.na(inode_end_index)) {
+					inode_end_index = length(node_cpu_idle_data$epoch)
+				} else if (inode_end_index > 1) {
+					inode_end_index = inode_end_index - 1
+				}
+				min_free_inode=node_inode_free_data$value[inode_end_index]
+
 				inodetotal = inodetotal + (max_free_inode - min_free_inode)
 			}
 
 			num_pods = local_bootdata$n_pods[length(local_bootdata$n_pods)]
-
-			# calculate scaling for secondary y axis
-			# the two y scales, in R, must be mathematically related
-			mem_scale = max(c(mem_scale,
-							  (max(mem_free_data$value) / (1024*1024*1024)) / num_pods))
-			cpu_scale = max(c(cpu_scale,
-							  max(cpu_idle_data$value) / num_pods))
-			inode_scale = max(c(inode_scale,
-								max(inode_free_data$value) / num_pods))
-			ip_scale = max(c(ip_scale,
-							 max(c(max(interface_packets_data$tx, na.rm=TRUE),
-								   max(interface_packets_data$rx, na.rm=TRUE))) / num_pods))
-			oct_scale = max(c(oct_scale,
-							  max(c(max(interface_octets_data$tx, na.rm=TRUE),
-									max(interface_octets_data$rx, na.rm=TRUE))) / num_pods))
-			# drops and scale are often 0, so providing 1 so we won't scale by infinity
-			drop_scale = max(c(drop_scale,
-							   max(c(1,
-									 max(interface_dropped_data$tx, na.rm=TRUE),
-									 max(interface_dropped_data$rx, na.rm=TRUE))) / num_pods))
-			error_scale = max(c(error_scale,
-								max(c(1,
-									  max(interface_errors_data$tx, na.rm=TRUE),
-									  max(interface_errors_data$rx, na.rm=TRUE))) / num_pods))
 
 			# We get data in b, but want the graphs in Gb.
 			memtotal = memtotal / (1024*1024*1024)
@@ -367,13 +394,14 @@ memfreedata$mem_free_gb = memfreedata$value/(1024*1024*1024)
 # And show the boot times in seconds, not ms
 podbootdata$launch_time_s = podbootdata$launch_time/1000.0
 
+
 ########### Output memory page ##############
 mem_stats_plot = suppressWarnings(ggtexttable(data.frame(memstats),
 	theme=ttheme(base_size=10),
 	rows=NULL
 	))
 
-#mem_sec_axis_scale=
+mem_scale = (max(memfreedata$value) / (1024*1024*1024)) / max(podbootdata$n_pods)
 mem_line_plot <- ggplot() +
 	geom_line(data=memfreedata,
 			  aes(s_offset, mem_free_gb, colour=interaction(testname, node),
@@ -411,6 +439,7 @@ cpu_stats_plot = suppressWarnings(ggtexttable(data.frame(cpustats),
 	rows=NULL
 	))
 
+cpu_scale = max(cpuidledata$value) / max(podbootdata$n_pods)
 cpu_line_plot <- ggplot() +
 	geom_line(data=cpuidledata,
 			  aes(x=s_offset, y=value, colour=interaction(testname, node),
@@ -472,6 +501,7 @@ inode_stats_plot = suppressWarnings(ggtexttable(data.frame(inodestats),
 	rows=NULL
 	))
 
+inode_scale = max(inodefreedata$value) / max(podbootdata$n_pods)
 inode_line_plot <- ggplot() +
 	geom_line(data=inodefreedata,
 			  aes(x=s_offset, y=value, colour=interaction(testname, node),
@@ -504,6 +534,8 @@ page4 = grid.arrange(
 cat("\n\n\\pagebreak\n")
 
 ########## Output interface page packets and octets ##############
+ip_scale = max(c(max(ifpacketdata$tx, na.rm=TRUE),
+				 max(ifpacketdata$rx, na.rm=TRUE))) / max(podbootdata$n_pods)
 interface_packet_line_plot <- ggplot() +
 	geom_line(data=ifpacketdata,
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
@@ -534,6 +566,8 @@ interface_packet_line_plot <- ggplot() +
 	ggtitle("interface packets") +
 	theme(axis.text.x=element_text(angle=90))
 
+oct_scale = max(c(max(ifoctetdata$tx, na.rm=TRUE),
+				  max(ifoctetdata$rx, na.rm=TRUE))) / max(podbootdata$n_pods)
 interface_octet_line_plot <- ggplot() +
 	geom_line(data=ifoctetdata,
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
@@ -564,7 +598,6 @@ interface_octet_line_plot <- ggplot() +
 	ggtitle("interface octets") +
 	theme(axis.text.x=element_text(angle=90))
 
-
 page5 = grid.arrange(
 	interface_packet_line_plot,
 	interface_octet_line_plot,
@@ -575,6 +608,10 @@ page5 = grid.arrange(
 cat("\n\n\\pagebreak\n")
 
 ########## Output interface page drops and errors ##############
+# drops are often 0, so providing 1 so we won't scale by infinity
+drop_scale = max(c(1,
+				   max(ifdropdata$tx, na.rm=TRUE),
+				   max(ifdropdata$rx, na.rm=TRUE))) / max(podbootdata$n_pods)
 interface_drop_line_plot <- ggplot() +
 	geom_line(data=ifdropdata,
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
@@ -605,6 +642,10 @@ interface_drop_line_plot <- ggplot() +
 	ggtitle("interface drops") +
 	theme(axis.text.x=element_text(angle=90))
 
+# errors are often 0, so providing 1 so we won't scale by infinity
+error_scale = max(c(1,
+					max(iferrordata$tx, na.rm=TRUE),
+					max(iferrordata$rx, na.rm=TRUE))) / max(podbootdata$n_pods)
 interface_error_line_plot <- ggplot() +
 	geom_line(data=iferrordata,
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
