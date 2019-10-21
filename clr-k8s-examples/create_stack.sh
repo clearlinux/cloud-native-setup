@@ -45,17 +45,21 @@ trap finish EXIT
 function cluster_init() {
 	# Config replacements
 	if ! [ -z ${TOKEN} ]; then
-		sed -i "/InitConfiguration/a bootstrapTokens:\\n- token: ${TOKEN}" ./kubeadm/base/kubeadm.yaml
+		sed -i "/InitConfiguration/a bootstrapTokens:\\n- token: ${TOKEN}" ./kubeadm.yaml
 	fi
 	if ! [ -z ${MASTER_IP} ]; then
-		sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm/base/kubeadm.yaml
+		sed -i "/InitConfiguration/a localAPIEndpoint:\\n  advertiseAddress: ${MASTER_IP}" ./kubeadm.yaml
 	fi
-	if [[ -n "$K8S_VER" && $(grep -c kubernetesVersion ./kubeadm/base/kubeadm.yaml) -eq 0 ]]; then
-		sed -i "s/ClusterConfiguration/ClusterConfiguration\nkubernetesVersion: ${K8S_VER}/g" ./kubeadm/base/kubeadm.yaml
+	if [[ -n "$K8S_VER" && $(grep -c kubernetesVersion ./kubeadm.yaml) -eq 0 ]]; then
+		sed -i "s/ClusterConfiguration/ClusterConfiguration\nkubernetesVersion: ${K8S_VER}/g" ./kubeadm.yaml
 	fi
 	# Config patches
 	if [[ -n "${HIGH_POD_COUNT}" ]]; then
-		echo "$(kubectl kustomize ./kubeadm/high-pod-count/)" > ./kubeadm/base/kubeadm.yaml
+		# increase limits in kubelet
+		sed -i "/KubeletConfiguration/a maxOpenFiles\: 1048576" ./kubeadm.yaml
+		sed -i "/KubeletConfiguration/a maxPods\: 5000" ./kubeadm.yaml
+		# increase the address range per node
+		sed -i "/ClusterConfiguration/a controllerManager:\\n  extraArgs:\\n    node-cidr-mask-size: \"20\"" ./kubeadm.yaml
 	fi
 	#This only works with kubernetes 1.12+. The kubeadm.yaml is setup
 	#to enable the RuntimeClass featuregate
@@ -63,7 +67,7 @@ function cluster_init() {
 		echo "/var/lib/etcd exists! skipping init."
 		return
 	fi
-	sudo -E kubeadm init --config=./kubeadm/base/kubeadm.yaml
+	sudo -E kubeadm init --config=./kubeadm.yaml
 
 	rm -rf "${HOME}/.kube"
 	mkdir -p "${HOME}/.kube"
