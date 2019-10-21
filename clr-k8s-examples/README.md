@@ -159,6 +159,9 @@ kubectl -n monitoring port-forward svc/grafana 3000
 Grafana is available at this URL http://localhost:3000 . Default credentials are
 `admin/admin`. Upon entering you will be asked to chose a new password.
 
+### CRI Resource Manager
+Go to [`10-cri-resource-manager`](./10-cri-resource-manager).
+
 ## Cleaning up the cluster (Hard reset to a clean state)
 
 Run `reset_stack.sh` on all the nodes
