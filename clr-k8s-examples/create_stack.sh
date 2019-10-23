@@ -24,6 +24,7 @@ METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
 PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
 CNI=${CLRK8S_CNI:-"canal"}
 RUNNER=${CLRK8S_RUNNER:-"crio"}
+NFD_VER="${CLRK8S_NFD_VER:-v0.4.0}"
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -264,7 +265,6 @@ function metallb() {
 	kubectl apply -k "${METALLB_DIR}/overlays/${METALLB_VER}"
 
 }
-
 function npd() {
 	NPD_VER=${1:-v0.6.6}
 	NPD_URL="https://github.com/kubernetes/node-problem-detector.git"
@@ -272,6 +272,16 @@ function npd() {
 	get_repo "${NPD_URL}" "${NPD_DIR}/overlays/${NPD_VER}"
 	set_repo_version "${NPD_VER}" "${NPD_DIR}/overlays/${NPD_VER}/node-problem-detector"
 	kubectl apply -k "${NPD_DIR}/overlays/${NPD_VER}"
+}
+
+# node feature discovery
+function nfd() {
+	NFD_VER=${1:-$NFD_VER}
+	NFD_URL="https://github.com/kubernetes-sigs/node-feature-discovery.git"
+	NFD_DIR="node-feature-discovery"
+	get_repo "${NFD_URL}" "${NFD_DIR}/overlays/${NFD_VER}"
+	set_repo_version "${NFD_VER}" "${NFD_DIR}/overlays/${NFD_VER}/node-feature-discovery"
+	kubectl apply -k "${NFD_DIR}/overlays/${NFD_VER}"
 }
 
 function miscellaneous() {
@@ -340,6 +350,7 @@ command_handlers[storage]=storage
 command_handlers[monitoring]=monitoring
 command_handlers[metallb]=metallb
 command_handlers[npd]=npd
+command_handlers[nfd]=nfd
 
 declare -A command_help
 command_help[init]="Only inits a cluster using kubeadm"
@@ -347,6 +358,7 @@ command_help[cni]="Setup network for running cluster"
 command_help[minimal]="init + cni +  kata + metrics"
 command_help[all]="minimal + storage + monitoring + miscellaneous"
 command_help[help]="show this message"
+command_help[nfd]="node feature discovery"
 
 cd "${SCRIPT_DIR}"
 

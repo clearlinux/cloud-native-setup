@@ -1,0 +1,5 @@
+resources:
+  - node-feature-discovery/nfd-daemonset-combined.yaml.template
+  - node-feature-discovery/nfd-worker-daemonset.yaml.template
+
+
