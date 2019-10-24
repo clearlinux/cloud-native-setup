@@ -16,10 +16,13 @@ HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # versions
 CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
+CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.6}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.1}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
 PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
+CNI=${CLRK8S_CNI:-"canal"}
+RUNNER=${CLRK8S_RUNNER:-"crio"}
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -100,23 +103,40 @@ function kata() {
 }
 
 function cni() {
-	# note version is not semver
-	CANAL_VER=${1:-$CANAL_VER}
-	CANAL_URL="https://docs.projectcalico.org/${CANAL_VER}/manifests"
-	if [[ "$CANAL_VER" == "v3.3" ]]; then
-		CANAL_URL="https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal"
-	fi
-	CANAL_DIR="0-canal"
+	case "$CNI" in
+	canal)
+		# note version is not semver
+		CANAL_VER=${1:-$CANAL_VER}
+		CANAL_URL="https://docs.projectcalico.org/${CANAL_VER}/manifests"
+		if [[ "$CANAL_VER" == "v3.3" ]]; then
+			CANAL_URL="https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal"
+		fi
+		CANAL_DIR="0-canal"
 
-	# canal manifests are not kept in repo but in docs site so use curl
-	mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
-	curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
-	if [[ "$CANAL_VER" == "v3.3" ]]; then
-		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
-	fi
-	# canal doesnt pass kustomize validation
-	kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
+		# canal manifests are not kept in repo but in docs site so use curl
+		mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
+		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
+		if [[ "$CANAL_VER" == "v3.3" ]]; then
+			curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
+		fi
+		# canal doesnt pass kustomize validation
+		kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
+		;;
+	cilium)
+		CILIUM_VER=${1:-$CILIUM_VER}
+		CILIUM_URL="https://github.com/cilium/cilium.git"
+		CILIUM_DIR="0-cilium"
 
+		mkdir -p "${CILIUM_DIR}/overlays/${CILIUM_VER}"
+		get_repo "${CILIUM_URL}" "${CILIUM_DIR}/overlays/${CILIUM_VER}"
+		set_repo_version "${CILIUM_VER}" "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/"
+		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" --namespace kube-system --set global.containerRuntime.integration="$RUNNER" | kubectl apply -f -
+		;;
+	*)
+		echo"Unknown cni $CNI"
+		exit 1
+		;;
+	esac
 }
 
 function metrics() {
