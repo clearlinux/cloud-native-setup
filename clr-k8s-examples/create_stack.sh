@@ -54,8 +54,12 @@ function cluster_init() {
 	if [[ -n "$K8S_VER" && $(grep -c kubernetesVersion ./kubeadm.yaml) -eq 0 ]]; then
 		sed -i "s/ClusterConfiguration/ClusterConfiguration\nkubernetesVersion: ${K8S_VER}/g" ./kubeadm.yaml
 	fi
-	if ! [ -z "${CERT_SANS}" ]; then
-		sed -i "/ClusterConfiguration/a apiServer:\\n  certSANs:"  ./kubeadm.yaml
+	if [[ -n "$CERT_SANS" ]]; then
+		if [[ $(grep -c certSANs ./kubeadm.yaml) -gt 0 ]]; then
+			sed -i '/certSANs/,/[a-zA-Z]*:/{//!d}' ./kubeadm.yaml
+		else
+			sed -i "/ClusterConfiguration/a apiServer:\\n  certSANs:"  ./kubeadm.yaml
+		fi
 		for CERT_SAN in ${CERT_SANS[@]}; do
 			sed -i "/certSANs/a \ \ - ${CERT_SAN}" ./kubeadm.yaml
 		 done
