@@ -1,4 +1,0 @@
-[
-  {"op": "add", "path": "/maxOpenFiles", "value": 1048576},
-  {"op": "add", "path": "/maxPods", "value": 5000}
-]
