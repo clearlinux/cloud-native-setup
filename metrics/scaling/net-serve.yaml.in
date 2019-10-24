@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    run: net-serve
+  name: @DEPLOYMENT@
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: net-serve
+  template:
+    metadata:
+      labels:
+        run: net-serve
+        @LABEL@: @LABELVALUE@
+    spec:
+      terminationGracePeriodSeconds: @GRACE@
+      runtimeClassName: @RUNTIMECLASS@
+      automountServiceAccountToken: false
+      containers:
+      - name: net-serve
+        image: gcr.io/kubernetes-e2e-test-images/agnhost:2.8
+        imagePullPolicy: IfNotPresent
+        args:
+        - netexec
+      restartPolicy: Always
