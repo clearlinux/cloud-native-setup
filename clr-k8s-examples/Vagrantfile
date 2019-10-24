@@ -6,8 +6,8 @@ require 'ipaddr'
 require 'securerandom'
 
 $num_instances = (ENV['NODES'] || 3).to_i
-$cpus = (ENV['CPUS'] || 2).to_i
-$memory = (ENV['MEMORY'] || 4096).to_i
+$cpus = (ENV['CPUS'] || 4).to_i
+$memory = (ENV['MEMORY'] || 8192).to_i
 $disks = 2
 # Using folder prefix instead of uuid until vagrant-libvirt fixes disk cleanup
 $disk_prefix = File.basename(File.dirname(__FILE__), "/")

@@ -14,7 +14,7 @@ Follow instructions in the [Vagrant docs](https://www.vagrantup.com/intro/gettin
 Or, follow our [detailed steps](vagrant.md)
 
 Now you have a 3 node cluster up and running. Each of them have 2 vCPU, 4GB Memory, 2x10GB disks, 1 additional private network.
-Customize the setup using environment variables. E.g., `NODES=1 MEMORY=8192 CPUS=8 vagrant up --provider=libvirt`
+Customize the setup using environment variables. E.g., `NODES=2 MEMORY=16384 CPUS=8 vagrant up --provider=libvirt`
 
 To login to the master node and change to this directory
 
