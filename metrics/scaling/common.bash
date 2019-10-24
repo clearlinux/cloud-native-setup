@@ -13,6 +13,7 @@ deployment="busybox"
 stats_pod="stats"
 
 NUM_PODS=${NUM_PODS:-20}
+NUM_DEPLOYMENTS=${NUM_DEPLOYMENTS:-20}
 STEP=${STEP:-1}
 
 LABEL=${LABEL:-magiclabel}
@@ -24,6 +25,8 @@ delete_wait_time=${delete_wait_time:-600}
 settle_time=${settle_time:-5}
 use_api=${use_api:-yes}
 grace=${grace:-30}
+wait_time_proc=20
+sleep_time_proc=2
 
 declare -a new_pods
 declare -A node_basemem
