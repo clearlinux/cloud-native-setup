@@ -341,7 +341,7 @@ function set_repo_version() {
 	pushd "$(pwd)"
 	cd "${path}"
 	git fetch origin "${ver}"
-	git checkout "${ver}"
+	git -c advice.detachedHead=false checkout "${ver}"
 	popd
 
 }
