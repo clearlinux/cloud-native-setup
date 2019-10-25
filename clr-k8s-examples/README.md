@@ -38,6 +38,11 @@ This script ensures the following
 script uses the runtime specified in the `RUNNER` environment variable and defaults to `crio`. To use the
 `containerd` runtime, set the `RUNNER` environment variable to `containerd`.
 
+### Specify a version of Clear Linux
+
+To specify a particular version of Clear Linux to use, set the CLRK8S_CLR_VER environment variable to the desired
+version before starting setup_system.sh (e.g. `CLRK8S_CLR_VER=31400 ./setup_system.sh`)
+
 ### Configuration for high numbers of pods per node
 
 In order to enable running greater than 110 pods per node, set the environment
