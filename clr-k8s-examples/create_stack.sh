@@ -18,6 +18,7 @@ HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 # versions
 CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
 CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.6}"
+FLANNEL_VER="${CLRK8S_FLANNEL_VER:-16b0fe66285d1ad1f42b154ab852682f6fafb1a7}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.1}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
@@ -132,6 +133,15 @@ function cni() {
 		fi
 		# canal doesnt pass kustomize validation
 		kubectl apply -k "${CANAL_DIR}/overlays/${CANAL_VER}" --validate=false
+		;;
+	flannel)
+		FLANNEL_VER=${1:-$FLANNEL_VER}
+		FLANNEL_URL="https://github.com/coreos/flannel"
+		FLANNEL_DIR="0-flannel"
+		
+		get_repo "${FLANNEL_URL}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
+        	set_repo_version "${FLANNEL_VER}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}/flannel"
+        	kubectl apply -k "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
 		;;
 	cilium)
 		CILIUM_VER=${1:-$CILIUM_VER}
