@@ -20,8 +20,14 @@ CANAL_VER="${CLRK8S_CANAL_VER:-v3.9}"
 CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.6}"
 FLANNEL_VER="${CLRK8S_FLANNEL_VER:-16b0fe66285d1ad1f42b154ab852682f6fafb1a7}"
 K8S_VER="${CLRK8S_K8S_VER:-}"
+KATA_VER="${CLRK8S_KATA_VER:-1.8.2-kernel-config}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.1.1}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.5}"
+DASHBOARD_VER="${CLRK8S_DASHBOARD_VER:-v2.0.0-beta2}"
+INGRES_VER="${CLRK8S_INGRES_VER:-nginx-0.25.1}"
+EFK_VER="${CLRK8S_EFK_VER:-v1.15.1}"
+METALLB_VER="${CLRK8S_METALLB_VER:-v0.8.1}"
+NPD_VER="${CLRK8S_NPD_VER:-v0.6.6}"
 PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
 CNI=${CLRK8S_CNI:-"canal"}
 RUNNER=${CLRK8S_RUNNER:-"crio"}
@@ -63,11 +69,11 @@ function cluster_init() {
 		if [[ $(grep -c certSANs ./kubeadm.yaml) -gt 0 ]]; then
 			sed -i '/certSANs/,/[a-zA-Z]*:/{//!d}' ./kubeadm.yaml
 		else
-			sed -i "/ClusterConfiguration/a apiServer:\\n  certSANs:"  ./kubeadm.yaml
+			sed -i "/ClusterConfiguration/a apiServer:\\n  certSANs:" ./kubeadm.yaml
 		fi
 		for CERT_SAN in ${CERT_SANS[@]}; do
 			sed -i "/certSANs/a \ \ - ${CERT_SAN}" ./kubeadm.yaml
-		 done
+		done
 	fi
 	if [[ -n "${HIGH_POD_COUNT}" ]]; then
 		# increase limits in kubelet
@@ -105,7 +111,7 @@ function cluster_init() {
 }
 
 function kata() {
-	KATA_VER=${1:-1.8.2-kernel-config}
+	KATA_VER=${1:-$KATA_VER}
 	KATA_URL="https://github.com/kata-containers/packaging.git"
 	KATA_DIR="8-kata"
 	get_repo "${KATA_URL}" "${KATA_DIR}/overlays/${KATA_VER}"
@@ -239,7 +245,7 @@ function monitoring() {
 }
 
 function dashboard() {
-	DASHBOARD_VER=${1:-v2.0.0-beta2}
+	DASHBOARD_VER=${1:-$DASHBOARD_VER}
 	DASHBOARD_URL="https://github.com/kubernetes/dashboard.git"
 	DASHBOARD_DIR="2-dashboard"
 	get_repo "${DASHBOARD_URL}" "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}"
@@ -248,7 +254,7 @@ function dashboard() {
 }
 
 function ingres() {
-	INGRES_VER=${1:-nginx-0.25.1}
+	INGRES_VER=${1:-$INGRES_VER}
 	INGRES_URL="https://github.com/kubernetes/ingress-nginx.git"
 	INGRES_DIR="5-ingres-lb"
 	get_repo "${INGRES_URL}" "${INGRES_DIR}/overlays/${INGRES_VER}"
@@ -257,7 +263,7 @@ function ingres() {
 }
 
 function efk() {
-	EFK_VER=${1:-v1.15.1}
+	EFK_VER=${1:-$EFK_VER}
 	EFK_URL="https://github.com/kubernetes/kubernetes.git"
 	EFK_DIR="3-efk"
 	get_repo "${EFK_URL}" "${EFK_DIR}/overlays/${EFK_VER}"
@@ -267,7 +273,7 @@ function efk() {
 }
 
 function metallb() {
-	METALLB_VER=${1:-v0.8.1}
+	METALLB_VER=${1:-$METALLB_VER}
 	METALLB_URL="https://github.com/danderson/metallb.git"
 	METALLB_DIR="6-metal-lb"
 	get_repo "${METALLB_URL}" "${METALLB_DIR}/overlays/${METALLB_VER}"
@@ -276,7 +282,7 @@ function metallb() {
 
 }
 function npd() {
-	NPD_VER=${1:-v0.6.6}
+	NPD_VER=${1:-$NPD_VER}
 	NPD_URL="https://github.com/kubernetes/node-problem-detector.git"
 	NPD_DIR="node-problem-detector"
 	get_repo "${NPD_URL}" "${NPD_DIR}/overlays/${NPD_VER}"
