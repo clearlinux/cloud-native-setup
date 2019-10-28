@@ -5,6 +5,7 @@ set -o nounset
 
 # global vars
 CLRK8S_OS=${CLRK8S_OS:-""}
+CLR_VER=${CLRK8S_CLR_VER:-""}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # set no proxy
@@ -14,6 +15,11 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 # update os version
 function upate_os_version() {
+	if [[ -n "${CLR_VER}" ]];
+	then
+		sudo swupd repair -m "${CLR_VER}" --picky
+		return
+	fi
 	sudo swupd update
 }
 
