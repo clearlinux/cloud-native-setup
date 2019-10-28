@@ -154,7 +154,6 @@ function cni() {
 		CILIUM_URL="https://github.com/cilium/cilium.git"
 		CILIUM_DIR="0-cilium"
 
-		mkdir -p "${CILIUM_DIR}/overlays/${CILIUM_VER}"
 		get_repo "${CILIUM_URL}" "${CILIUM_DIR}/overlays/${CILIUM_VER}"
 		set_repo_version "${CILIUM_VER}" "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/"
 		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" --namespace kube-system --set global.containerRuntime.integration="$RUNNER" | kubectl apply -f -
