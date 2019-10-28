@@ -4,3 +4,8 @@ resources:
   - packaging/kata-deploy/k8s-1.14/kata-fc-runtimeClass.yaml
   - packaging/kata-deploy/k8s-1.14/kata-qemu-runtimeClass.yaml
 
+images:
+  # change 'latest' to specified version
+  - name: katadocker/kata-deploy
+    newName: katadocker/kata-deploy
+    newTag: 1.8.2
