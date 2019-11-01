@@ -52,3 +52,4 @@ sudo systemctl is-enabled containerd && sudo systemctl restart containerd
 sudo systemctl restart kubelet
 
 reset_cluster
+sudo -E bash -c "rm -rf /var/lib/containerd/*"
