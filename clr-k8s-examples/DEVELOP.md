@@ -119,7 +119,7 @@ patchesJson6902:
   # adds "networking.k8s.io" to ClusterRole's apiGroups
   - target:
       group: rbac.authorization.k8s.io
-      version: v1beta1
+      version: v1
       kind: ClusterRole
       name: nginx-ingress-clusterrole
     path: patch_clusterrole.yaml
@@ -137,7 +137,7 @@ itself contains the operation to perform, target path and value. The `rules/3/ap
 operation (in this case "add") at the `apiGroups:` list found under the 4th list item of `rules:`. 
 
 ```yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: nginx-ingress-clusterrole
