@@ -380,8 +380,8 @@ help()
 	usage=$(cat << EOF
 Usage: $0 [-h] [options]
    Description:
-	Launch a series of workloads and take memory metric measurements after
-	each launch.
+	Launch a series of workloads in a linear manner and take memory metric measurements
+	after each launch.
    Options:
 		-h,    Help page.
 EOF
