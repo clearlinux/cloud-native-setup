@@ -13,9 +13,10 @@ is below:
 
 | Tool | Description |
 | ---- | ----------- |
+| collectd | `collectd` based statistics/metrics gathering daemonset code |
 | lib | General library helper functions for forming and launching workloads, and storing results in a uniform manner to aid later analysis |
-| scaling | Tests to measure scaling, such as linear or parallel launching of pods |
 | report | Rmarkdown based report generator, used to produce a PDF comparison report of 1 or more sets of results |
+| scaling | Tests to measure scaling, such as linear or parallel launching of pods |
 
 
 ## Results storage and analysis
@@ -130,3 +131,22 @@ If k8s_parallel.sh was run, the results file is named `k8s-parallel.json` rather
    └── scaling-4.png
    ```
 More details about result reporting can be reviewed at [`report`](./report) directory.
+
+# Developers
+
+This section provides some details of how the code is structured and configured. This may be of use whilst modifying
+existing or creating new tests.
+
+## Metrics gathering
+
+Metrics can be gathered using either a daemonset deployment of privileged pods used to gather statistics directly from the nodes using a combination of `mpstat`, `free` and `df`, or a daemonset deployment based around `collectd`.
+
+### `collectd` statistics
+
+The `collected` based code can be found in the `collectd` subdirectory. It uses the `collected` configuration found in the `collectd.conf` file to gather statistics, and store the results on the nodes themselves whilst tests are running. At the end of the test, the results are copied from the nodes and stored in the results directory for later processing.
+
+The `collectd` statistics are only configured and gathered if the environment variable `SMF_USE_COLLECTD` is set to non-empty by the test code (that is, only enabled upon request).
+
+### privileged statistics pods
+
+The privileged statistics pods `YAML` can be found in the `scaling/stats.yaml` file. An example of how to invoke and use this daemonset to extract statistics can be found in the `scaling/k8s_scale.sh` file.
