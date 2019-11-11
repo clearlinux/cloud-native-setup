@@ -44,18 +44,18 @@ sudo systemctl enable --now containerd-devmapper
 # no. of feature arguments
 # Skip zeroing blocks for new volumes.
 sudo dmsetup create contd-thin-pool \
-  --table "0 2097152 thin-pool /dev/loop21 /dev/loop20 512 32768 1 skip_block_zeroing"
+  --table "0 20971520 thin-pool /dev/loop21 /dev/loop20 512 32768 1 skip_block_zeroing"
 
 sudo mkdir -p /etc/containerd/
 if [ -f /etc/containerd/config.toml ]
 then
-  sudo sed -i 's|^\(\[plugins\]\).*|\1\n  \[plugins.devmapper\]\n    pool_name = \"contd-thin-pool\"\n    base_image_size = \"512MB\"|' /etc/containerd/config.toml
+  sudo sed -i 's|^\(\[plugins\]\).*|\1\n  \[plugins.devmapper\]\n    pool_name = \"contd-thin-pool\"\n    base_image_size = \"4096MB\"|' /etc/containerd/config.toml
 else
   cat<<EOT | sudo tee /etc/containerd/config.toml
 [plugins]
   [plugins.devmapper]
     pool_name = "contd-thin-pool"
-    base_image_size = "512MB"
+    base_image_size = "4096MB"
 EOT
 fi
 
