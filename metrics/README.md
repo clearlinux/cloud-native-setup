@@ -15,9 +15,9 @@ is below:
 | ---- | ----------- |
 | collectd | `collectd` based statistics/metrics gathering daemonset code |
 | lib | General library helper functions for forming and launching workloads, and storing results in a uniform manner to aid later analysis |
+| lib/cpu-load* | Routines to enable CPU load generation on a cluster |
 | report | Rmarkdown based report generator, used to produce a PDF comparison report of 1 or more sets of results |
 | scaling | Tests to measure scaling, such as linear or parallel launching of pods |
-
 
 ## Results storage and analysis
 
@@ -150,3 +150,11 @@ The `collectd` statistics are only configured and gathered if the environment va
 ### privileged statistics pods
 
 The privileged statistics pods `YAML` can be found in the `scaling/stats.yaml` file. An example of how to invoke and use this daemonset to extract statistics can be found in the `scaling/k8s_scale.sh` file.
+
+## Configuring constant 'loads'
+
+The framework includes some tooling to assist in setting up constant pre-defined 'loads' across the cluster to aid evaluation of their impacts on the scaling metrics.
+
+### CPU load generator
+
+Details of how to configure a constant CPU load are detailed in the [cpu-load documentation](lib/cpu-load.md).
