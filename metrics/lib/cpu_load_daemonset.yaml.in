@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cpu-load
+spec:
+  selector:
+    matchLabels:
+      name: cpu-load-pods
+  template:
+    metadata:
+      labels:
+        name: cpu-load-pods
+    spec:
+      hostNetwork: true
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: cpu-load
+          imagePullPolicy: IfNotPresent
+          image: polinux/stress-ng
+          command: ["stress-ng"]
+          args:                 # comment fields here so we can *delete* sections on demand
+            - "--cpu"
+            - "@CPU_NCPU@"
+            - "-l"              #CPU_PERCENT
+            - "@CPU_PERCENT@"   #CPU_PERCENT
+          resources:
+            limits:
+              cpu: @CPU_LIMIT@
+            requests:
+              cpu: @CPU_REQUEST@
