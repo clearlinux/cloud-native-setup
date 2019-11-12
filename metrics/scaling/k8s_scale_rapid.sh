@@ -15,6 +15,8 @@ source "${SCRIPT_PATH}/../collectd/collectd.bash"
 NUM_PODS=${NUM_PODS:-20}
 STEP=${STEP:-1}
 
+SMF_USE_COLLECTD=true
+
 LABELVALUE=${LABELVALUE:-gandalf}
 
 pod_command="[\"tail\", \"-f\", \"/dev/null\"]"
@@ -64,27 +66,7 @@ EOF
 }
 
 init() {
-	info "Initialising"
-
-	local cmds=("bc" "jq")
-	check_cmds "${cmds[@]}"
-
-	info "Checking k8s accessible"
-	local worked=$( kubectl get nodes > /dev/null 2>&1 && echo $? || echo $? )
-	if [ "$worked" != 0 ]; then
-		die "kubectl failed to get nodes"
-	fi
-
-	info $(get_num_nodes) "k8s nodes in 'Ready' state found"
-
-	k8s_api_init
-
-	# Launch our stats gathering pod
-	init_stats $wait_time
-
-	# And now we can set up our results storage then...
-	metrics_json_init "k8s"
-	save_config
+	framework_init
 }
 
 save_config(){
@@ -198,11 +180,7 @@ EOF
 )"
 
 	metrics_json_add_fragment "$json"
-	metrics_json_save
-
-	cleanup_stats $delete_wait_time
-
-	k8s_api_shutdown
+	framework_shutdown
 }
 
 show_vars()

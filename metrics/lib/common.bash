@@ -10,6 +10,7 @@ RESULT_DIR="${LIB_DIR}/../results"
 
 source ${LIB_DIR}/json.bash
 source ${LIB_DIR}/k8s-api.bash
+source ${LIB_DIR}/cpu-load.bash
 source /etc/os-release || source /usr/lib/os-release
 
 die() {
@@ -65,6 +66,46 @@ init_env()
 	# We could try to clean the k8s cluster here... but that
 	# might remove some pre-installed soak tests etc. that have
 	# been deliberately injected into the cluster under test.
+}
+
+framework_init() {
+	info "Initialising"
+
+	check_cmds "${cmds[@]}"
+
+	info "Checking k8s accessible"
+	local worked=$( kubectl get nodes > /dev/null 2>&1 && echo $? || echo $? )
+	if [ "$worked" != 0 ]; then
+		die "kubectl failed to get nodes"
+	fi
+
+	info $(get_num_nodes) "k8s nodes in 'Ready' state found"
+
+	k8s_api_init
+
+	# Launch our stats gathering pod
+	if [ -n "$SMF_USE_COLLECTD" ]; then
+		info "Setting up collectd"
+		init_stats $wait_time
+	fi
+
+	# Initialise the cpu load generators
+	cpu_load_init
+
+	# And now we can set up our results storage then...
+	metrics_json_init "k8s"
+	save_config
+}
+
+framework_shutdown() {
+	metrics_json_save
+	k8s_api_shutdown
+	cpu_load_shutdown
+
+	if [ -n "$SMF_USE_COLLECTD" ]; then
+		cleanup_stats
+	fi
+
 }
 
 # finds elements in $1 that are not in $2

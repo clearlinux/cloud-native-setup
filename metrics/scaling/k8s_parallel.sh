@@ -126,7 +126,7 @@ init() {
 	# a nice way to do it (unless you want to parse 'descibe nodes')
 	# Have a read of https://github.com/kubernetes/kubernetes/issues/25353
 
-	k8s_api_init
+	framework_init
 
 	# Ensure we pre-cache the container image etc.
 	warmup
@@ -218,11 +218,8 @@ cleanup() {
 
 	# First try to save any results we got
 	metrics_json_end_array "BootResults"
-	metrics_json_save
-
 	kill_deployment "${deployment}" "${LABEL}" "${LABELVALUE}" ${delete_wait_time}
-
-	k8s_api_shutdown
+	framework_shutdown
 }
 
 show_vars()

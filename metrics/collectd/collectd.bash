@@ -25,8 +25,6 @@ init_stats() {
 }
 
 cleanup_stats() {
-	local delete_wait_time=$1
-
 	# attempting to provide buffer for collectd CPU collection to record adequate history
 	sleep 6
 

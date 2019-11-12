@@ -235,7 +235,7 @@ init() {
 	# FIXME - check the node(s) can run enough pods - check 'max-pods' in the
 	# kubelet config - from 'kubectl describe node -o json' ?
 
-	k8s_api_init
+	framework_init
 
 	# Launch our stats gathering pod
 	kubectl apply -f ${SCRIPT_PATH}/${stats_pod}.yaml
@@ -410,9 +410,7 @@ EOF
 )"
 
 	metrics_json_add_fragment "$json"
-	metrics_json_save
-
-	k8s_api_shutdown
+	framework_shutdown
 }
 
 show_vars()
