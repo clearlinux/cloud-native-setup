@@ -89,12 +89,14 @@ framework_init() {
 		init_stats $wait_time
 	fi
 
-	# Initialise the cpu load generators
-	cpu_load_init
-
 	# And now we can set up our results storage then...
 	metrics_json_init "k8s"
 	save_config
+
+	# Initialise the cpu load generators now - after json init, as they may
+	# produce some json results (config) data.
+	cpu_load_init
+
 }
 
 framework_shutdown() {

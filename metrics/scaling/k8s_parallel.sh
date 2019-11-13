@@ -130,10 +130,6 @@ init() {
 
 	# Ensure we pre-cache the container image etc.
 	warmup
-
-	# And now we can set up our results storage then...
-	metrics_json_init "k8s"
-	save_config
 }
 
 save_config(){

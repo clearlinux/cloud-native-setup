@@ -218,10 +218,6 @@ init() {
 	# FIXME - we should probably 'warm up' the cluster with the container image(s) we will
 	# use for testing, otherwise the download time will likely be included in the first pod
 	# boot time.
-
-	# And now we can set up our results storage then...
-	metrics_json_init "k8s"
-	save_config
 }
 
 save_config(){
