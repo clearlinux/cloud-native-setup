@@ -151,7 +151,7 @@ function setup_proxy() {
 		sed_val=${ADD_NO_PROXY//\//\\/}
 		[ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
 		if [ -f /etc/profile.d/proxy.sh ]; then
-			sudo sed -i "/no_proxy/I s/\"$/,${sed_val}\"/g" /etc/profile.d/proxy.sh
+			sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/profile.d/proxy.sh
 		else
 			echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
 		fi
