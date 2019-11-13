@@ -56,6 +56,9 @@ else
   [plugins.devmapper]
     pool_name = "contd-thin-pool"
     base_image_size = "4096MB"
+  [plugins.cri]
+    [plugins.cri.containerd]
+      snapshotter = "devmapper"
 EOT
 fi
 
