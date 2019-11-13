@@ -71,6 +71,20 @@ cpu_per_node_init() {
 		info "Sleeping ${cpu_load_post_deploy_sleep}s for cpu-load to settle"
 		sleep ${cpu_load_post_deploy_sleep}
 	fi
+
+	# And store off our config into the JSON results
+	metrics_json_start_array
+	local json="$(cat << EOF
+	{
+		"LOAD_NODES_NCPU": "${SMF_CPU_LOAD_NODES_NCPU}",
+		"LOAD_NODES_PERCENT": "${SMF_CPU_LOAD_NODES_PERCENT}",
+		"LOAD_NODES_LIMIT": "${SMF_CPU_LOAD_NODES_LIMIT}",
+		"LOAD_NODES_REQUEST": "${SMF_CPU_LOAD_NODES_REQUEST}"
+	}
+EOF
+)"
+	metrics_json_add_array_element "$json"
+	metrics_json_end_array "cpu-load"
 }
 
 cpu_load_init() {
