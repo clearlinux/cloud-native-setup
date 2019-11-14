@@ -9,7 +9,7 @@ CLR_VER=${CLRK8S_CLR_VER:-""}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # set no proxy
-ADD_NO_PROXY=".svc,10.244.0.0/16,10.96.0.0/12"
+ADD_NO_PROXY=".svc,10.0.0.0/8,192.168.0.0/16"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 : "${RUNNER:=crio}"
 
