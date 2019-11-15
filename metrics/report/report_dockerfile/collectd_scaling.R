@@ -657,7 +657,7 @@ interface_drop_line_plot <- ggplot() +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("drops") +
-	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./drop_scale, name="pods")) +
+	scale_y_continuous(breaks=pretty_breaks(), sec.axis=sec_axis(~ ./drop_scale, name="pods", labels=comma)) +
 	ggtitle("interface drops") +
 	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
@@ -692,7 +692,7 @@ interface_error_line_plot <- ggplot() +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("errors") +
-	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./error_scale, name="pods")) +
+	scale_y_continuous(breaks=pretty_breaks(), sec.axis=sec_axis(~ ./error_scale, name="pods", labels=comma)) +
 	ggtitle("interface errors") +
 	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
