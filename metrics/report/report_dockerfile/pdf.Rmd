@@ -8,6 +8,10 @@ author: "Auto generated"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   pdf_document:
+# Shrink the page margins so we get bigger/better resolution on the graphs
+# Keep the top and bottom margins reasonable, as we are really interested in
+# gaining 'width', and if we trim the bottom too much, we lose the page numbers.
+geometry: "left=1cm, right=1cm, top=2cm, bottom=2cm"
 urlcolor: blue
 ---
 
