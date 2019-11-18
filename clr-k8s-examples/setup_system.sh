@@ -11,12 +11,11 @@ HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 # set no proxy
 ADD_NO_PROXY=".svc,10.0.0.0/8,192.168.0.0/16"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
-: "${RUNNER:=crio}"
+if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-crio}"; fi
 
 # update os version
 function upate_os_version() {
-	if [[ -n "${CLR_VER}" ]];
-	then
+	if [[ -n "${CLR_VER}" ]]; then
 		sudo swupd repair -m "${CLR_VER}" --picky
 		return
 	fi

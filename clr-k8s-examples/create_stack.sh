@@ -30,7 +30,8 @@ METALLB_VER="${CLRK8S_METALLB_VER:-v0.8.1}"
 NPD_VER="${CLRK8S_NPD_VER:-v0.6.6}"
 PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
 CNI=${CLRK8S_CNI:-"canal"}
-RUNNER=${CLRK8S_RUNNER:-"crio"}
+if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-"crio"}"; fi
+
 NFD_VER="${CLRK8S_NFD_VER:-v0.4.0}"
 
 function print_usage_exit() {
@@ -144,10 +145,10 @@ function cni() {
 		FLANNEL_VER=${1:-$FLANNEL_VER}
 		FLANNEL_URL="https://github.com/coreos/flannel"
 		FLANNEL_DIR="0-flannel"
-		
+
 		get_repo "${FLANNEL_URL}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
-        	set_repo_version "${FLANNEL_VER}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}/flannel"
-        	kubectl apply -k "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
+		set_repo_version "${FLANNEL_VER}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}/flannel"
+		kubectl apply -k "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
 		;;
 	cilium)
 		CILIUM_VER=${1:-$CILIUM_VER}
