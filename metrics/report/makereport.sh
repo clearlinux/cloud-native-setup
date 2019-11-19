@@ -100,7 +100,7 @@ setup() {
 }
 
 run() {
-	docker run -ti --rm -v ${HOSTINPUTDIR}:${GUESTINPUTDIR} -v ${HOSTOUTPUTDIR}:${GUESTOUTPUTDIR} ${extra_volumes} ${IMAGE} ${extra_command}
+	docker run ${extra_opts} --rm -v ${HOSTINPUTDIR}:${GUESTINPUTDIR} -v ${HOSTOUTPUTDIR}:${GUESTOUTPUTDIR} ${extra_volumes} ${IMAGE} ${extra_command}
 	ls -la ${HOSTOUTPUTDIR}/*
 }
 
@@ -113,6 +113,7 @@ main() {
 			# In debug mode, run a shell instead of the default report generation
 			extra_command="bash"
 			extra_volumes="-v ${HOSTSCRIPTDIR}:${GUESTSCRIPTDIR}"
+			extra_opts="-ti"
 			;;
 		esac
 	done
