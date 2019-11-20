@@ -38,6 +38,9 @@ This script ensures the following
 script uses the runtime specified in the `RUNNER` environment variable and defaults to `crio`. To use the
 `containerd` runtime, set the `RUNNER` environment variable to `containerd`.
 
+In case of vagrant, if you want to spin up VM's using different environment variable than declared in [`setup_system.sh`],
+specify when performing vagrant up. E.g., `RUNNER=containerd vagrant up`
+
 ### Specify a version of Clear Linux
 
 To specify a particular version of Clear Linux to use, set the CLRK8S_CLR_VER environment variable to the desired
