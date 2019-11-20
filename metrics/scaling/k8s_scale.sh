@@ -169,7 +169,7 @@ EOF
 	if [ $n_pods -eq 0 ]; then
 		local pods_per_gb=0
 	else
-		local pods_per_gb=$(bc -l <<< "scale=2; ($total_mem_used/1024) / $n_pods")
+		local pods_per_gb=$(printf "%0f" $(bc -l <<< "scale=2; ($total_mem_used/1024) / $n_pods"))
 	fi
 	local mem_json="$(cat << EOF
 			"memory": {
