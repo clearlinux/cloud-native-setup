@@ -77,7 +77,7 @@ EOF
 		# if you don't tell it the period, you will get the avg since boot, which is not what we want.
 		local cpu_idle=$(kubectl exec -ti $name -- sh -c "mpstat -u 3 1 | tail -1 | awk '{print \$11}'" | sed 's/\r//')
 		local mem_free=$(kubectl exec -ti $name -- sh -c "free | tail -2 | head -1 | awk '{print \$4}'" | sed 's/\r//')
-		local inode_free=$(kubectl exec -ti $name -- sh -c "df -i | awk '/^overlay/ {print \$4}'" | sed 's/\r//')
+		local inode_free=$(kubectl exec -ti $name -- sh -c "df -i / | awk '/^overlay/ {print \$4}'" | sed 's/\r//')
 
 		info "idle [$cpu_idle] free [$mem_free] launch [$launch_time_ms] node [$node] inodes_free [$inode_free]"
 
