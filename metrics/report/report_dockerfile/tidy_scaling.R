@@ -66,8 +66,7 @@ for (currentdir in resultdirs) {
 			########################################################
 			local_bootdata=tibble(launch_time=br$launch_time$Result)
 			local_bootdata=cbind(local_bootdata, n_pods=br$n_pods$Result)
-			local_bootdata=cbind(local_bootdata, node=lp$node)
-			local_bootdata=cbind(local_bootdata, testname=rep(testname, length(local_bootdata$node)))
+			local_bootdata=cbind(local_bootdata, testname=rep(testname, length(local_bootdata$n_pods)))
 
 
 			########################################################
@@ -115,7 +114,7 @@ for (currentdir in resultdirs) {
 			local_nodedata=cbind(local_nodedata, mem_used=used_df$Result)
 			local_nodedata=cbind(local_nodedata, inode_free=ifree_df$Result)
 			local_nodedata=cbind(local_nodedata, inode_used=iused_df$Result)
-			local_nodedata=cbind(local_nodedata, testname=rep(testname, length(local_nodedata$node)))
+			local_nodedata=cbind(local_nodedata, testname=rep(testname, length(local_nodedata$n_pods)))
 
 			# Now Calculate some stats. This gets more complicated as we may have n-nodes,
 			# and we want to show a 'pod average', so we try to assess for all nodes. If
@@ -124,15 +123,15 @@ for (currentdir in resultdirs) {
 			# table.
 
 			# Get a list of all the nodes
-			nodes=unique(local_nodedata$node)
+			unique_nodes=unique(local_nodedata$node)
 
 			memtotal=0
 			cputotal=0
 			inodetotal=0
 			# Calculate per-node totals, and tot them up to a global total.
-			for (n in nodes) {
+			for (n in unique_nodes) {
 				# Make a frame with just that nodes data in
-				thisnode=subset(local_nodedata, node %in% c(n))
+				thisnode=local_nodedata[ which(local_nodedata$node==n),]
 
 				# Do not use the master (non-schedulable) nodes to calculate
 				# launched pod metrics
@@ -275,7 +274,7 @@ boot_stats_plot = suppressWarnings(ggtexttable(data.frame(bootstats),
 
 boot_line_plot <- ggplot() +
 	geom_line( data=bootdata, aes(n_pods, launch_time_s, colour=testname, group=testname), alpha=0.2) +
-	geom_point( data=bootdata, aes(n_pods, launch_time_s, colour=interaction(testname, node), group=testname), alpha=0.6, size=0.6, stroke=0, shape=16) +
+	geom_point( data=bootdata, aes(n_pods, launch_time_s, colour=testname, group=testname), alpha=0.6, size=0.6, stroke=0, shape=16) +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
