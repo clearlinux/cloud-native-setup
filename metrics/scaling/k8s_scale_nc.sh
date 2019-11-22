@@ -437,8 +437,8 @@ help()
 	usage=$(cat << EOF
 Usage: $0 [-h] [options]
    Description:
-	Launch a series of workloads and take memory metric measurements after
-	each launch.
+	Launch a series of workloads and take pod query-response latency measurements
+	after each launch.
    Options:
 		-h,    Help page.
 EOF
