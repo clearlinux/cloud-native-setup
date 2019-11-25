@@ -229,6 +229,7 @@ mem_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma) +
 	ggtitle("System Memory free") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page1 = grid.arrange(
@@ -256,6 +257,7 @@ cpu_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	xlab("pods") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page2 = grid.arrange(
@@ -279,6 +281,7 @@ boot_line_plot <- ggplot() +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page3 = grid.arrange(
@@ -307,6 +310,7 @@ inode_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	ylab("inodes free") +
 	scale_y_continuous(labels=comma) +
 	ggtitle("inodes free") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page4 = grid.arrange(
