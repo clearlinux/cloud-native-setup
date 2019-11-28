@@ -30,6 +30,9 @@ cpustats=c()		# Statistics for cpu usage
 bootstats=c()		# Statistics for boot (launch) times
 inodestats=c()		# Statistics for inode usage
 
+skip_points=0		# If we have a lot of samples, do not add data points to the graphs
+skip_points_limit=100	# The limit above which we do not draw points
+
 # iterate over every set of results (test run)
 for (currentdir in resultdirs) {
 	# For every results file we are interested in evaluating
@@ -341,6 +344,10 @@ for (currentdir in resultdirs) {
 
 			num_pods = local_bootdata$n_pods[length(local_bootdata$n_pods)]
 
+			if (num_pods > skip_points_limit) {
+				skip_points=1
+			}
+
 			# We get data in b, but want the graphs in Gb.
 			memtotal = memtotal / (1024*1024*1024)
 			gb_per_pod = memtotal/num_pods
@@ -420,22 +427,27 @@ mem_line_plot <- ggplot() +
 			  aes(s_offset, mem_free_gb, colour=interaction(testname, node),
 				  group=interaction(testname, node)),
 			  alpha=0.3) +
-	geom_point(data=memfreedata,
-			   aes(s_offset, mem_free_gb, colour=interaction(testname, node),
-				   group=interaction(testname, node)),
-			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./mem_scale, name="pods")) +
 	ggtitle("System Memory free") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	mem_line_plot = mem_line_plot +
+	geom_point(data=memfreedata,
+		aes(s_offset, mem_free_gb, colour=interaction(testname, node),
+			group=interaction(testname, node)),
+		alpha=0.5, size=0.5) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 page1 = grid.arrange(
 	mem_line_plot,
@@ -458,22 +470,27 @@ cpu_line_plot <- ggplot() +
 			  aes(x=s_offset, y=value, colour=interaction(testname, node),
 				  group=interaction(testname, node)),
 			  alpha=0.3) +
-	geom_point(data=cpuidledata,
-			   aes(x=s_offset, y=value, colour=interaction(testname, node),
-				   group=interaction(testname, node)),
-			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./cpu_scale, name="pods")) +
 	xlab("seconds") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	cpu_line_plot = cpu_line_plot +
+	geom_point(data=cpuidledata,
+		aes(x=s_offset, y=value, colour=interaction(testname, node),
+			group=interaction(testname, node)),
+		alpha=0.5, size=0.5) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*cpu_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 page2 = grid.arrange(
 	cpu_line_plot,
@@ -520,22 +537,27 @@ inode_line_plot <- ggplot() +
 			  aes(x=s_offset, y=value, colour=interaction(testname, node),
 				  group=interaction(testname, node)),
 			  alpha=0.2) +
-	geom_point(data=inodefreedata,
-			   aes(x=s_offset, y=value, colour=interaction(testname, node),
-				   group=interaction(testname, node)),
-			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("inodes free") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./inode_scale, name="pods")) +
 	ggtitle("inodes free") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	inode_line_plot = inode_line_plot +
+	geom_point(data=inodefreedata,
+		aes(x=s_offset, y=value, colour=interaction(testname, node),
+			group=interaction(testname, node)),
+		alpha=0.5, size=0.5) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 page4 = grid.arrange(
 	inode_line_plot,
@@ -554,30 +576,35 @@ interface_packet_line_plot <- ggplot() +
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
 				  group=interaction(testname, node, name, "tx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifpacketdata,
-			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-				   group=interaction(testname, node, name, "tx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifpacketdata,
 			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
 				  group=interaction(testname, node, name, "rx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifpacketdata,
-			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-				   group=interaction(testname, node, name, "rx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("packets") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./ip_scale, name="pods")) +
 	ggtitle("interface packets") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	interface_packet_line_plot = interface_packet_line_plot +
+	geom_point(data=ifpacketdata,
+		aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+			group=interaction(testname, node, name, "tx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=ifpacketdata,
+		aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+			group=interaction(testname, node, name, "rx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*ip_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 oct_scale = max(c(max(ifoctetdata$tx, na.rm=TRUE),
 				  max(ifoctetdata$rx, na.rm=TRUE))) / max(podbootdata$n_pods)
@@ -586,30 +613,35 @@ interface_octet_line_plot <- ggplot() +
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
 				  group=interaction(testname, node, name, "tx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifoctetdata,
-			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-				   group=interaction(testname, node, name, "tx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifoctetdata,
 			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
 				  group=interaction(testname, node, name, "rx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifoctetdata,
-			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-				   group=interaction(testname, node, name, "rx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("octets") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./oct_scale, name="pods")) +
 	ggtitle("interface octets") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	interface_octet_line_plot = interface_octet_line_plot +
+	geom_point(data=ifoctetdata,
+		aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+			group=interaction(testname, node, name, "tx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=ifoctetdata,
+		aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+			group=interaction(testname, node, name, "rx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*oct_scale, colour=interaction(testname,"pod count"),
+			 group=testname),
+		alpha=0.3, size=0.5)
+}
 
 page5 = grid.arrange(
 	interface_packet_line_plot,
@@ -630,30 +662,35 @@ interface_drop_line_plot <- ggplot() +
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
 				  group=interaction(testname, node, name, "tx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifdropdata,
-			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-				   group=interaction(testname, node, name, "tx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=ifdropdata,
 			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
 				  group=interaction(testname, node, name, "rx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=ifdropdata,
-			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-				   group=interaction(testname, node, name, "rx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("drops") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./drop_scale, name="pods")) +
 	ggtitle("interface drops") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	interface_drop_line_plot = interface_drop_line_plot +
+	geom_point(data=ifdropdata,
+		aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+			group=interaction(testname, node, name, "tx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=ifdropdata,
+		aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+			group=interaction(testname, node, name, "rx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*drop_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 # errors are often 0, so providing 1 so we won't scale by infinity
 error_scale = max(c(1,
@@ -664,30 +701,35 @@ interface_error_line_plot <- ggplot() +
 			  aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
 				  group=interaction(testname, node, name, name, "tx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=iferrordata,
-			   aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
-				   group=interaction(testname, node, name, "tx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=iferrordata,
 			  aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
 				  group=interaction(testname, node, name, "rx")),
 			  alpha=0.2, na.rm=TRUE) +
-	geom_point(data=iferrordata,
-			   aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
-				   group=interaction(testname, node, name, "rx")),
-			   alpha=0.5, size=0.5, na.rm=TRUE) +
 	geom_line(data=podbootdata,
 			  aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
-	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"), group=testname),
-			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("errors") +
 	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./error_scale, name="pods")) +
 	ggtitle("interface errors") +
 	theme(axis.text.x=element_text(angle=90))
+
+if (skip_points == 0 ) {
+	interface_error_line_plot = interface_error_line_plot +
+	geom_point(data=iferrordata,
+		aes(x=s_offset, y=tx, colour=interaction(testname, node, name, "tx"),
+			group=interaction(testname, node, name, "tx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=iferrordata,
+		aes(x=s_offset, y=rx, colour=interaction(testname, node, name, "rx"),
+			group=interaction(testname, node, name, "rx")),
+		alpha=0.5, size=0.5, na.rm=TRUE) +
+	geom_point(data=podbootdata,
+		aes(x=s_offset, y=n_pods*error_scale, colour=interaction(testname,"pod count"),
+			group=testname),
+		alpha=0.3, size=0.5)
+}
 
 page6 = grid.arrange(
 	interface_drop_line_plot,
