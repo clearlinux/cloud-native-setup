@@ -11,7 +11,8 @@ library(gridExtra)										# together.
 suppressMessages(suppressWarnings(library(ggpubr))) # for ggtexttable.
 suppressMessages(library(jsonlite))			# to load the data.
 suppressMessages(library(scales))			# For de-science notation of axis
-library(tibble)								# tibbles for tidy data
+library(tibble)						# tibbles for tidy data
+library(RColorBrewer)					# So we can match palette to data shape
 
 testnames=c(
 	"k8s-rapid.*"
@@ -469,6 +470,38 @@ if (skip_points == 0 ) {
 		alpha=0.3, size=0.5)
 }
 
+# For upto 3 test datasets, we try to construct a more useful colour palette
+# to group the test data together by colour.
+datasets=unique(memfreedata$testname)
+palettes=c("Reds", "Greens", "Blues")
+if (length(datasets) <= length(palettes) ) {
+	pal=c()
+	count=1
+	use_palette=1
+
+	for (d in datasets) {
+		data=memfreedata[memfreedata$testname==d,]
+		nodes=length(unique(data$node))
+
+		# We can only handle upto 9 colours per test set. If we find more than that
+		# for any data set, abort the palette use, as we must have an n:n palette to
+		# apply to the plot.
+		if (nodes > 9) { use_palette=0 }
+
+		# Grab the 'full' palette. If we ask for just 'n', then they get spread evenly
+		# from full dark to dim, and with our alpha value, the dim become unreadable.
+		# reverse the list, as they come out dim first, and we want 'strong' first.
+		p = rev(brewer.pal(9, palettes[count]))
+		pal = c(pal, p[1:(nodes+1)])
+
+		count = count + 1
+	}
+}
+
+if (use_palette == 1) {
+	mem_line_plot = mem_line_plot + scale_color_manual(values = pal)
+}
+
 page1 = grid.arrange(
 	mem_line_plot,
 	mem_stats_plot,
@@ -512,6 +545,9 @@ if (skip_points == 0 ) {
 		alpha=0.3, size=0.5)
 }
 
+if (use_palette == 1) {
+	cpu_line_plot = cpu_line_plot + scale_color_manual(values = pal)
+}
 
 cat("The CPU usage table is calculated using a Linear Model in order to identify the trend from potentially noisy data. Values of 'NA' indicate a valid model could not be fitted to the data (possibly due to too few samples).\n\n")
 
@@ -582,6 +618,10 @@ if (skip_points == 0 ) {
 		aes(x=s_offset, y=n_pods*inode_scale, colour=interaction(testname,"pod count"),
 			group=testname),
 		alpha=0.3, size=0.5)
+}
+
+if (use_palette == 1) {
+	inode_line_plot = inode_line_plot + scale_color_manual(values = pal)
 }
 
 page4 = grid.arrange(
