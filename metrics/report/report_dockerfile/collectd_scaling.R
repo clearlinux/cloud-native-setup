@@ -20,6 +20,7 @@ testnames=c(
 podbootdata=c()		# Track per-launch data
 cpuidledata=c()		# Track cpu idle data per nodes
 memfreedata=c()		# Track mem free data for nodes
+memuseddata=c()		# Track mem used data for nodes
 inodefreedata=c()	# Track inode free data for nodes
 ifpacketdata=c()	# Track interface packet data for nodes
 ifoctetdata=c()		# Track interface octets data for nodes
@@ -104,11 +105,13 @@ for (currentdir in resultdirs) {
 			# Get a list of all the nodes from the schedule data list
 			nodes=names(node_sched_data)
 
-			memtotal=0
+			memfreedelta_total=0
+			memuseddelta_total=0
 			cputotal=0
 			inodetotal=0
 			cpu_idle_data=c()
 			mem_free_data=c()
+			mem_used_data=c()
 			inode_free_data=c()
 			interface_packets_data=c()
 			interface_octets_data=c()
@@ -127,7 +130,7 @@ for (currentdir in resultdirs) {
 				localhost_dir=paste(node_dir, "localhost", sep="/")
 
 				# grab memory data
-				memory_dir=paste(localhost_dir, "memory", sep="/")	
+				memory_dir=paste(localhost_dir, "memory", sep="/")
 				# filename has date on the end, so look for the right file name
 				freemem_pattern='^memory\\-free'
 				files=list.files(memory_dir, pattern=freemem_pattern)
@@ -136,12 +139,25 @@ for (currentdir in resultdirs) {
 					mem_free_csv=paste(memory_dir, file, sep="/")
 					node_mem_free_data=read.csv(mem_free_csv, header=TRUE, sep=",")
 					node_mem_free_data=cbind(node_mem_free_data,
-											 node=rep(n, length(node_mem_free_data$value)))
+								 node=rep(n, length(node_mem_free_data$value)))
 					node_mem_free_data=cbind(node_mem_free_data,
-											 testname=rep(testname, length(node_mem_free_data$value)))
+								 testname=rep(testname, length(node_mem_free_data$value)))
 					node_mem_free_data$s_offset = node_mem_free_data$epoch - local_bootdata[1,]$epoch
-
 					mem_free_data=rbind(mem_free_data, node_mem_free_data)
+				}
+				# filename has date on the end, so look for the right file name
+				usedmem_pattern='^memory\\-used'
+				files=list.files(memory_dir, pattern=usedmem_pattern)
+				# collectd csv plugin starts a new file for each day of data collected
+				for(file in files) {
+					mem_used_csv=paste(memory_dir, file, sep="/")
+					node_mem_used_data=read.csv(mem_used_csv, header=TRUE, sep=",")
+					node_mem_used_data=cbind(node_mem_used_data,
+								 node=rep(n, length(node_mem_used_data$value)))
+					node_mem_used_data=cbind(node_mem_used_data,
+								 testname=rep(testname, length(node_mem_used_data$value)))
+					node_mem_used_data$s_offset = node_mem_used_data$epoch - local_bootdata[1,]$epoch
+					mem_used_data=rbind(mem_used_data, node_mem_used_data)
 				}
 
 				# grab CPU data
@@ -273,6 +289,8 @@ for (currentdir in resultdirs) {
 				end_time=local_bootdata$epoch[length(local_bootdata$epoch)]
 
 				# get value closest to first pod launch
+				# memory-free and memory-used data share exactly the same timestamps,
+				# so the same start/end indexes work for both.
 				mem_start_index=Position(function(x) x > start_time, node_mem_free_data$epoch)
 				# take the reading previous to the index as long as a valid index
 				if (is.na(mem_start_index)) {
@@ -281,6 +299,7 @@ for (currentdir in resultdirs) {
 					mem_start_index = mem_start_index - 1
 				}
 				max_free_mem=node_mem_free_data$value[mem_start_index]
+				min_used_mem=node_mem_used_data$value[mem_start_index]
 
 				# get value closest to last pod launch
 				mem_end_index=Position(function(x) x > end_time, node_mem_free_data$epoch)
@@ -291,8 +310,10 @@ for (currentdir in resultdirs) {
 					mem_end_index = mem_end_index - 1
 				}
 				min_free_mem=node_mem_free_data$value[mem_end_index]
+				max_used_mem=node_mem_used_data$value[mem_end_index]
 
-				memtotal = memtotal + (max_free_mem - min_free_mem)
+				memfreedelta_total = memfreedelta_total + (max_free_mem - min_free_mem)
+				memuseddelta_total = memuseddelta_total + (max_used_mem - min_used_mem)
 
 				# get value closest to first pod launch
 				cpu_start_index=Position(function(x) x > start_time, node_cpu_idle_data$epoch)
@@ -342,17 +363,21 @@ for (currentdir in resultdirs) {
 			num_pods = local_bootdata$n_pods[length(local_bootdata$n_pods)]
 
 			# We get data in b, but want the graphs in Gb.
-			memtotal = memtotal / (1024*1024*1024)
-			gb_per_pod = memtotal/num_pods
-			pod_per_gb = 1/gb_per_pod
+			memfreedelta_total = memfreedelta_total / (1024*1024*1024)
+			memuseddelta_total = memuseddelta_total / (1024*1024*1024)
+			gb_nonfree_per_pod = memfreedelta_total/num_pods
+			gb_used_per_pod = memuseddelta_total/num_pods
+			pod_per_nonfree_gb = 1/gb_nonfree_per_pod
+			pod_per_used_gb = 1/gb_used_per_pod
 
 			# Memory usage stats.
 			local_mems = c(
 				"Test"=testname,
 				"n"=num_pods,
-				"Tot_Gb"=round(memtotal, 3),
-				"avg_Gb"=round(gb_per_pod, 4),
-				"n_per_Gb"=round(pod_per_gb, 2)
+				"Free_GB_delta"=round(memfreedelta_total, 3),
+				"Used_GB_delta"=round(memuseddelta_total, 3),
+				"n_per_nonfree_GB"=round(pod_per_nonfree_gb, 2),
+				"n_per_used_GB"=round(pod_per_used_gb, 2)
 			)
 			memstats=rbind(memstats, local_mems)
 
@@ -393,6 +418,7 @@ for (currentdir in resultdirs) {
 		podbootdata=rbind(podbootdata, local_bootdata, make.row.names=FALSE)
 		cpuidledata=rbind(cpuidledata, cpu_idle_data)
 		memfreedata=rbind(memfreedata, mem_free_data)
+		memuseddata=rbind(memuseddata, mem_used_data)
 		inodefreedata=rbind(inodefreedata, inode_free_data)
 		ifpacketdata=rbind(ifpacketdata, interface_packets_data)
 		ifoctetdata=rbind(ifoctetdata, interface_octets_data)
@@ -404,6 +430,7 @@ for (currentdir in resultdirs) {
 # It's nice to show the graphs in Gb, at least for any decent sized test
 # run, so make a new column with that pre-divided data in it for us to use.
 memfreedata$mem_free_gb = memfreedata$value/(1024*1024*1024)
+memuseddata$mem_used_gb = memuseddata$value/(1024*1024*1024)
 # And show the boot times in seconds, not ms
 podbootdata$launch_time_s = podbootdata$launch_time/1000.0
 
@@ -414,8 +441,9 @@ mem_stats_plot = suppressWarnings(ggtexttable(data.frame(memstats),
 	rows=NULL
 	))
 
-mem_scale = (max(memfreedata$value) / (1024*1024*1024)) / max(podbootdata$n_pods)
-mem_line_plot <- ggplot() +
+mem_free_scale = (max(memfreedata$value) / (1024*1024*1024)) / max(podbootdata$n_pods)
+mem_used_scale = (max(memuseddata$value) / (1024*1024*1024)) / max(podbootdata$n_pods)
+mem_free_line_plot <- ggplot() +
 	geom_line(data=memfreedata,
 			  aes(s_offset, mem_free_gb, colour=interaction(testname, node),
 				  group=interaction(testname, node)),
@@ -425,21 +453,44 @@ mem_line_plot <- ggplot() +
 				   group=interaction(testname, node)),
 			   alpha=0.5, size=0.5) +
 	geom_line(data=podbootdata,
-			  aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
+			  aes(x=s_offset, y=n_pods*mem_free_scale, colour=interaction(testname,"pod count"), group=testname),
 			  alpha=0.2) +
 	geom_point(data=podbootdata,
-			   aes(x=s_offset, y=n_pods*mem_scale, colour=interaction(testname,"pod count"), group=testname),
+			   aes(x=s_offset, y=n_pods*mem_free_scale, colour=interaction(testname,"pod count"), group=testname),
 			   alpha=0.3, size=0.5) +
 	labs(colour="") +
 	xlab("seconds") +
 	ylab("System Avail (Gb)") +
-	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./mem_scale, name="pods")) +
+	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./mem_free_scale, name="pods")) +
 	ggtitle("System Memory free") +
 	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
+mem_used_line_plot <- ggplot() +
+	geom_line(data=memuseddata,
+			  aes(s_offset, mem_used_gb, colour=interaction(testname, node),
+				  group=interaction(testname, node)),
+			  alpha=0.3) +
+	geom_point(data=memuseddata,
+			   aes(s_offset, mem_used_gb, colour=interaction(testname, node),
+				   group=interaction(testname, node)),
+			   alpha=0.5, size=0.5) +
+	geom_line(data=podbootdata,
+			  aes(x=s_offset, y=n_pods*mem_used_scale, colour=interaction(testname,"pod count"), group=testname),
+			  alpha=0.2) +
+	geom_point(data=podbootdata,
+			   aes(x=s_offset, y=n_pods*mem_used_scale, colour=interaction(testname,"pod count"), group=testname),
+			   alpha=0.3, size=0.5) +
+	labs(colour="") +
+	xlab("seconds") +
+	ylab("System Used (Gb)") +
+	scale_y_continuous(labels=comma, sec.axis=sec_axis(~ ./mem_used_scale, name="pods")) +
+	ggtitle("System Memory used, not counting Cached, Buffered and SLAB") +
+	theme(axis.text.x=element_text(angle=90))
+
 page1 = grid.arrange(
-	mem_line_plot,
+	mem_free_line_plot,
+	mem_used_line_plot,
 	mem_stats_plot,
 	ncol=1
 	)
