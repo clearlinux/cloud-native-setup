@@ -19,8 +19,6 @@ This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s
 measures the system memory 'free' reduction, CPU idle %, free inodes, and pod boot time as
 it launches more and more idle `busybox` pods on a Kubernetes cluster.
 
-> Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.
-
 ```{r scaling, echo=FALSE, fig.cap="K8S scaling", results='asis'}
 source('tidy_scaling.R')
 ```

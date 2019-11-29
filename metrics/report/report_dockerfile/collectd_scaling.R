@@ -317,7 +317,27 @@ for (currentdir in resultdirs) {
 				}
 				min_idle_cpu=node_cpu_idle_data$value[cpu_end_index]
 
-				cputotal = cputotal + (max_idle_cpu - min_idle_cpu)
+				# Use a linear regression model to try and guesstimate the CPU
+				# cost per pod.
+				# We used to use the formula:
+				#  cputotal = cputotal + (max_idle_cpu - min_idle_cpu)
+				# to examine the difference from the first and last sample, but, the data
+				# for cpu is quite noisy. This could easily lead to the first/last samples
+				# being sat in a peak or trough, and thus throwing out the actual value.
+				# Using the linear regression, at least if our measurements are fairly linear
+				# then maybe we get a more realistic result.
+
+				cpu_lm=lm(value ~ epoch, data=node_cpu_idle_data[cpu_start_index:cpu_end_index,])
+				inter=cpu_lm$coefficients["(Intercept)"]
+				coeff=cpu_lm$coefficients["epoch"]
+
+				# Calculate the theoretical cpu values at the start/end of the pod sequence
+				# according to the linear model, and work out the difference (how much we have
+				# reduced over the whole sequence).
+				start_cpu=inter + (coeff * node_cpu_idle_data[cpu_start_index,]$epoch)
+				end_cpu=inter + (coeff * node_cpu_idle_data[cpu_end_index,]$epoch)
+
+				cputotal = cputotal + (start_cpu - end_cpu)
 
 				# get value closest to first pod launch
 				inode_start_index=Position(function(x) x > start_time, node_inode_free_data$epoch)
@@ -491,6 +511,11 @@ if (skip_points == 0 ) {
 			group=testname),
 		alpha=0.3, size=0.5)
 }
+
+
+cat("The CPU usage table is calculated using a Linear Model in order to identify the trend from potentially noisy data. Values of 'NA' indicate a valid model could not be fitted to the data (possibly due to too few samples).\n\n")
+
+cat("> Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.\n\n")
 
 page2 = grid.arrange(
 	cpu_line_plot,
