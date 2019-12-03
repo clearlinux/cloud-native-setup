@@ -43,13 +43,19 @@ for (currentdir in resultdirs) {
 				next
 			}
 
+			# Check if filename follows the hard-coded test name
+			shortname=substr(ffound, 1, nchar(ffound)-nchar(".json"))
+			if ( substr(testname, 1, nchar(testname)-nchar(".*")) != shortname) {
+				warning(paste("Result file name does not match with test name: ", shortname))
+				break
+			}
+
 			# Derive the name from the test result dirname
 			datasetname=basename(currentdir)
 
 			# Import the data
 			fdata=fromJSON(fname)
 			# De-nest the test name specific data
-			shortname=substr(ffound, 1, nchar(ffound)-nchar(".json"))
 			fdata=fdata[[shortname]]
 			testname=datasetname
 
@@ -195,8 +201,12 @@ for (currentdir in resultdirs) {
 		# And collect up our rows into our global table of all results
 		# These two tables *should* be the source of all the data we need to
 		# process and plot (apart from the stats....)
-		bootdata=rbind(bootdata, local_bootdata, make.row.names=FALSE)
-		nodedata=rbind(nodedata, local_nodedata, make.row.names=FALSE)
+		if ( exists("local_bootdata") ) {
+			bootdata=rbind(bootdata, local_bootdata, make.row.names=FALSE)
+			nodedata=rbind(nodedata, local_nodedata, make.row.names=FALSE)
+		 } else {
+			 warning(paste("Could not able to create report for: ", ffound))
+		}
 	}
 }
 

@@ -77,6 +77,7 @@ for (currentdir in resultdirs) {
 
 	if ( length(dirstats) == 0 ) {
 		warning(paste("No valid data found for directory ", currentdir))
+		break
 	}
 
 	# use plyr rbind.fill so we can combine disparate version info frames
