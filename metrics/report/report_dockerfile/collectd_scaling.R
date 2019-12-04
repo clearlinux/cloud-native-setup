@@ -18,6 +18,7 @@ testnames=c(
 )
 
 podbootdata=c()		# Track per-launch data
+bootmeandata=c()	# Calculate mean data across 'buckets'
 cpuidledata=c()		# Track cpu idle data per nodes
 memfreedata=c()		# Track mem free data for nodes
 inodefreedata=c()	# Track inode free data for nodes
@@ -28,7 +29,10 @@ iferrordata=c()		# Track interface errors data for nodes
 memstats=c()		# Statistics for memory usage
 cpustats=c()		# Statistics for cpu usage
 bootstats=c()		# Statistics for boot (launch) times
+bootmeanstats=c()	# Statistics for boot (launch) times mean bucket diffs
 inodestats=c()		# Statistics for inode usage
+
+bootdiffbuckets=10	# How many buckets do we evaluate the boot times in
 
 # iterate over every set of results (test run)
 for (currentdir in resultdirs) {
@@ -94,6 +98,41 @@ for (currentdir in resultdirs) {
 			# get the epoch time in seconds for the boot
 			local_bootdata$epoch = local_bootdata$ns/1000000000
 			local_bootdata$s_offset = local_bootdata$epoch - local_bootdata[1,]$epoch
+
+			# Grab the stepping used during testing, so we can calculate bucket sizes
+			stepping=fdata$Config$STEP
+
+			# Here we try to calculate and get a feel for 'changes over time' for
+			# launch times. That is, we are looking to see if the 'launch overheads
+			# per pod' change over time (or is it a linear cost?).
+			# We do this by taking the launch time diff between each consecutive launch,
+			# and then looking at the mean of those diffs across a 'buckets' width. We do
+			# this to de-noise the data (as actual individual diffs bounce up and down around
+			# the zero line a lot... so we are looking for the 'trend')
+
+			# Set up a diff of the consecutive boot times. Prepend with '0' so the result
+			# is the same length as the original data...
+			local_bootdata$launch_diff=c(0, diff(local_bootdata$launch_time))
+
+			# Annotate entries into 'buckets', so we can get some 'rolling' means
+			# Calculate the bucket mid point values of the range they cover, so they
+			# plot sanely along with n_pods based data.
+			bucket_size=ceiling(nrow(local_bootdata)/bootdiffbuckets)
+
+			# Take into account any STEP used in the testing.
+			pods_per_bucket=bucket_size*stepping
+			local_bootdata$bucket_min=(rep(0:(bootdiffbuckets-1), each=bucket_size)*bucket_size)[1:nrow(local_bootdata)] * stepping
+			local_bootdata$bucket_max=local_bootdata$bucket_min + (pods_per_bucket-1)
+			local_bootdata$bucket_mid=local_bootdata$bucket_min + (pods_per_bucket/2)
+
+			# And calculate the means diffs for those buckets
+			local_bootmean=aggregate(launch_diff ~ bucket_min, data=local_bootdata, FUN=mean)
+			local_bootmean$testname=rep(testname, nrow(local_bootmean))
+
+			# And annotate the bucket results with max/mid points as well, so we can
+			# form a stats table
+			local_bootmean$bucket_max=local_bootmean$bucket_min + (pods_per_bucket-1)
+			local_bootmean$bucket_mid=local_bootmean$bucket_min + (pods_per_bucket/2)
 
 			# Now Calculate some stats. This gets more complicated as we may have n-nodes,
 			# and we want to show a 'pod average', so we try to assess for all nodes. If
@@ -377,6 +416,27 @@ for (currentdir in resultdirs) {
 
 			bootstats=rbind(bootstats, local_boots)
 
+			# Create bucket midpoint and diff lines for the table
+			# And make sure we pad them all out to the same length in the case
+			# of any 'short' tests.
+			bucketmids=c(local_bootmean$bucket_mid, rep("NA",
+				bootdiffbuckets-length(local_bootmean$bucket_mid)))
+			bucketmids=setNames(bucketmids, seq(1, bootdiffbuckets))
+			local_bootbuckets = c(
+				"Test/bucket"=paste(testname, "pod"),
+				bucketmids
+				)
+			bootmeanstats=rbind(bootmeanstats, local_bootbuckets)
+
+			bucketdiffs=c(local_bootmean$launch_diff, rep("NA",
+				bootdiffbuckets-length(local_bootmean$launch_diff)))
+			bucketdiffs=setNames(bucketdiffs, seq(1, bootdiffbuckets))
+			local_bootbuckets = c(
+				"Test/bucket"=paste(testname, "diff"),
+				bucketdiffs
+				)
+			bootmeanstats=rbind(bootmeanstats, local_bootbuckets)
+
 			# inode stats
 			local_inodes = c(
 				"Test"=testname,
@@ -391,6 +451,7 @@ for (currentdir in resultdirs) {
 		# These two tables *should* be the source of all the data we need to
 		# process and plot (apart from the stats....)
 		podbootdata=rbind(podbootdata, local_bootdata, make.row.names=FALSE)
+		bootmeandata=rbind(bootmeandata, local_bootmean, make.row.names=FALSE)
 		cpuidledata=rbind(cpuidledata, cpu_idle_data)
 		memfreedata=rbind(memfreedata, mem_free_data)
 		inodefreedata=rbind(inodefreedata, inode_free_data)
@@ -507,6 +568,45 @@ page3 = grid.arrange(
 	boot_stats_plot,
 	ncol=1
 	)
+
+# pagebreak, as the graphs overflow the page otherwise
+cat("\n\n\\pagebreak\n")
+
+boot_meanstats_plot = suppressWarnings(ggtexttable(data.frame(bootmeanstats, check.names=FALSE),
+	theme=ttheme(base_size=10),
+	rows=NULL
+	))
+
+# Plot the mean bucket diff bars and the smoothed diff lines onto the same graph.
+# We do not plot the (un-smoothed) raw diff lines themselves, as they are very noisy. This
+# is largely caused as if you have a 'peak' (a slow launch time), then the subsequent launch
+# time will almost always be less, so the diff oscillates around the zero line.
+boot_diff_bar_plot <- ggplot(podbootdata) +
+	# We use a geom_rect rather than a geom_bar, so we can make the bars fit the width
+	# of the buckets they actually cover - visually this is more useful.
+	geom_rect(data=bootmeandata,
+		aes(xmin=bucket_min, xmax=bucket_max, ymin=0, ymax=launch_diff, colour=testname,
+		fill=testname), alpha=0.3) +
+	# We use a geom_line with a stat=smooth rather than a geom_smooth so we can set the line alpha.
+	geom_line(aes(n_pods, launch_diff, colour=testname),
+		stat="smooth", se=FALSE, method="loess", span=0.25, alpha=0.3) +
+	xlab("pods") +
+	ylab("Mean launch time change (ms)") +
+	ggtitle("Mean pod launch time change") +
+	theme(legend.position="bottom") +
+	theme(axis.text.x=element_text(angle=90))
+
+cat("\nMean pod boot time difference (increase/decrease), evaluated over ")
+cat(bootdiffbuckets)
+cat(" intervals. The table data shows the millisecond mean change over each span, listed under")
+cat(" the midpoint pod count for that span\n\n")
+# Suppress the warnings here, as data sets with a small number of values
+# will always warn from the 'loess' smoothing function.
+page3_1 = suppressWarnings(grid.arrange(
+	boot_diff_bar_plot,
+	boot_meanstats_plot,
+	ncol=1
+	))
 
 # pagebreak, as the graphs overflow the page otherwise
 cat("\n\n\\pagebreak\n")
