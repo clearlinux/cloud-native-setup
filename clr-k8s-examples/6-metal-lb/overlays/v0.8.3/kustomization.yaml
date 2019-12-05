@@ -1,0 +1,6 @@
+resources:
+  - metallb/manifests/example-layer2-config.yaml
+  - metallb/manifests/metallb.yaml
+
+patchesStrategicMerge:
+  - patch_configmap.yaml
