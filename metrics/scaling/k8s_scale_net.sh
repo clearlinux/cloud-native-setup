@@ -158,7 +158,7 @@ run() {
 
         # Check service exposed
         cmd="kubectl get services $deployment -n default --no-headers=true"
-        waitForProcess "$wait_time_proc" "$sleep_time_proc" "$cmd" "Waiting for service"
+        waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "Waiting for service"
 
 		IP=$(kubectl get services $deployment -n default --no-headers=true | awk '{printf $3}')
 		end_net=$(date +%s%N)
@@ -166,7 +166,7 @@ run() {
 
 		# service health check
         cmd="curl --noproxy \"*\" http://$IP:8080/healthz"
-        waitForProcess "$wait_time_proc" "$sleep_time_proc" "$cmd" "http server is not ready yet!!"
+        waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "http server is not ready yet!!"
 
 		RESP=$(curl -s --noproxy "*" http://$IP:8080/echo?msg=curl%20request%20to%20$deployment)
 		local end_time=$(date +%s%N)
@@ -241,6 +241,8 @@ show_vars() {
 	echo -e "\t\tNumber of pods to launch per cycle"
 	echo -e "\twait_time (${wait_time})"
 	echo -e "\t\tSeconds to wait for pods to become ready"
+	echo -e "\tproc_wait_time (${proc_wait_time})"
+	echo -e "\t\tSeconds to wait for net server process to become ready"
 	echo -e "\tdelete_wait_time (${delete_wait_time})"
 	echo -e "\t\tSeconds to wait for all pods to be deleted"
 	echo -e "\tsettle_time (${settle_time})"
