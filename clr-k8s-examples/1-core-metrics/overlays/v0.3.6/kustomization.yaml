@@ -1,0 +1,8 @@
+resources:
+  - metrics-server/deploy/1.8+/aggregated-metrics-reader.yaml
+  - metrics-server/deploy/1.8+/auth-delegator.yaml
+  - metrics-server/deploy/1.8+/auth-reader.yaml
+  - metrics-server/deploy/1.8+/metrics-apiservice.yaml
+  - metrics-server/deploy/1.8+/metrics-server-deployment.yaml
+  - metrics-server/deploy/1.8+/metrics-server-service.yaml
+  - metrics-server/deploy/1.8+/resource-reader.yaml
