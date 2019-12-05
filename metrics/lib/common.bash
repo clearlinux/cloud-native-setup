@@ -129,3 +129,22 @@ find_unique_pods() {
 				fi
 		done
 }
+
+# waits for process to complete within a given time range
+waitForProcess(){
+    wait_time="$1"
+    sleep_time="$2"
+    cmd="$3"
+    proc_info_msg="$4"
+
+    while [ "$wait_time" -gt 0 ]; do
+        if eval "$cmd"; then
+            return 0
+        else
+            info "$proc_info_msg"
+            sleep "$sleep_time"
+            wait_time=$((wait_time-sleep_time))
+        fi
+    done
+    return 1
+}

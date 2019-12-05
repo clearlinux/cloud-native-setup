@@ -190,13 +190,13 @@ for (currentdir in resultdirs) {
 				"avg_inode"=round(inodetotal/num_pods, 4)
 				)
 			inodestats=rbind(inodestats, local_inodes)
-		}
 
-		# And collect up our rows into our global table of all results
-		# These two tables *should* be the source of all the data we need to
-		# process and plot (apart from the stats....)
-		bootdata=rbind(bootdata, local_bootdata, make.row.names=FALSE)
-		nodedata=rbind(nodedata, local_nodedata, make.row.names=FALSE)
+			# And collect up our rows into our global table of all results
+			# These two tables *should* be the source of all the data we need to
+			# process and plot (apart from the stats....)
+			bootdata=rbind(bootdata, local_bootdata, make.row.names=FALSE)
+			nodedata=rbind(nodedata, local_nodedata, make.row.names=FALSE)
+		}
 	}
 }
 
@@ -229,6 +229,7 @@ mem_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	ylab("System Avail (Gb)") +
 	scale_y_continuous(labels=comma) +
 	ggtitle("System Memory free") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page1 = grid.arrange(
@@ -256,6 +257,7 @@ cpu_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	xlab("pods") +
 	ylab("System CPU Idle (%)") +
 	ggtitle("System CPU usage") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page2 = grid.arrange(
@@ -279,6 +281,7 @@ boot_line_plot <- ggplot() +
 	xlab("pods") +
 	ylab("Boot time (s)") +
 	ggtitle("Pod boot time") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page3 = grid.arrange(
@@ -307,6 +310,7 @@ inode_line_plot <- ggplot(data=nodedata, aes(n_pods,
 	ylab("inodes free") +
 	scale_y_continuous(labels=comma) +
 	ggtitle("inodes free") +
+	theme(legend.position="bottom") +
 	theme(axis.text.x=element_text(angle=90))
 
 page4 = grid.arrange(
