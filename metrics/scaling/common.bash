@@ -25,8 +25,8 @@ delete_wait_time=${delete_wait_time:-600}
 settle_time=${settle_time:-5}
 use_api=${use_api:-yes}
 grace=${grace:-30}
-wait_time_proc=20
-sleep_time_proc=2
+proc_wait_time=${proc_wait_time:-20}
+proc_sleep_time=2
 
 declare -a new_pods
 declare -A node_basemem
