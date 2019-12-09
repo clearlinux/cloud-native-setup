@@ -1,0 +1,3 @@
+resources:
+  - ingress-nginx/deploy/static/mandatory.yaml
+  - ingress-nginx/deploy/static/provider/baremetal/service-nodeport.yaml
