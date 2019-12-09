@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: mem-load-@MEM_NODE_ROLE@
+spec:
+  selector:
+    matchLabels:
+      name: mem-load-pods
+  template:
+    metadata:
+      labels:
+        name: mem-load-pods
+    spec:
+      hostNetwork: true
+      terminationGracePeriodSeconds: 0
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: node-role.kubernetes.io/master
+                  operator: @MEM_MATCH_ROLE_MASTER@
+      containers:
+        - name: mem-load
+          imagePullPolicy: IfNotPresent
+          # image: Would prefer polinux/stress-ng here, but stress-ng is
+          # outdated: it does not support percentages in memory load
+          # (--vm-bytes 50%) and has max bytes limit of 4GB per worker.
+          # therefore develop with a self-made static build of stress-ng.
+          image: dklyle/stress-ng
+          command: ["./stress-ng"]
+          args:                 # comment fields here so we can *delete* sections on demand
+            - "--vm-bytes"
+            - "@MEM_BYTES@"
+            - "--vm-ops"
+            - "1"
+            - "--vm"
+            - "@MEM_WORKERS@"
+            - "--vm-hang"
+            - "0"
+            - "--vm-keep"
+            - "--vm-method"
+            - "galpat-0"
+          resources:
+            limits:
+              memory: @MEM_LIMIT@
+            requests:
+              memory: @MEM_REQUEST@

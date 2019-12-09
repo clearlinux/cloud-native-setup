@@ -11,6 +11,7 @@ RESULT_DIR="${LIB_DIR}/../results"
 source ${LIB_DIR}/json.bash
 source ${LIB_DIR}/k8s-api.bash
 source ${LIB_DIR}/cpu-load.bash
+source ${LIB_DIR}/mem-load.bash
 source /etc/os-release || source /usr/lib/os-release
 
 die() {
@@ -93,9 +94,10 @@ framework_init() {
 	metrics_json_init "k8s"
 	save_config
 
-	# Initialise the cpu load generators now - after json init, as they may
+	# Initialise load generators now - after json init, as they may
 	# produce some json results (config) data.
 	cpu_load_init
+	mem_load_init
 
 }
 
@@ -103,6 +105,7 @@ framework_shutdown() {
 	metrics_json_save
 	k8s_api_shutdown
 	cpu_load_shutdown
+	mem_load_shutdown
 
 	if [ -n "$SMF_USE_COLLECTD" ]; then
 		cleanup_stats
