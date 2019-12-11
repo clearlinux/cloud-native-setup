@@ -165,7 +165,7 @@ run() {
 		info "IP: $IP"
 
 		# service health check
-        cmd="curl --noproxy \"*\" http://$IP:8080/healthz"
+        cmd="curl --noproxy \"*\" http://$IP:8080/healthz --connect-timeout 1"
         waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "http server is not ready yet!!"
 
 		RESP=$(curl -s --noproxy "*" http://$IP:8080/echo?msg=curl%20request%20to%20$deployment)
