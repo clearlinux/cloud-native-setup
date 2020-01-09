@@ -16,7 +16,7 @@ if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-crio}"; fi
 # update os version
 function upate_os_version() {
 	if [[ -n "${CLR_VER}" ]]; then
-		sudo swupd repair -m "${CLR_VER}" --picky
+		sudo swupd repair -m "${CLR_VER}" --picky --force
 		return
 	fi
 	sudo swupd update
