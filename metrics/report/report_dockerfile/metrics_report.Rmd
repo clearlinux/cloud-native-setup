@@ -40,7 +40,7 @@ source('parallel.R')
 
 # Runtime scaling rapid
 This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s_scale_fast.sh)
-uses collectd to asynchronously measure CPU idle %, free memory, pod boot time, free inodes,
+uses collectd to asynchronously measure CPU idle %, free and used memory, pod boot time, free inodes,
 and interface stats as it launches more and more idle `busybox` pods on a Kubernetes cluster.
 
 > Note: CPU % is measured as a system whole - 100% represents *all* CPUs on the node.
