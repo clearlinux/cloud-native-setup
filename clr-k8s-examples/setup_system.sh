@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -x
 set -o errexit
 set -o nounset
 
@@ -9,60 +9,62 @@ CLR_VER=${CLRK8S_CLR_VER:-""}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # set no proxy
-ADD_NO_PROXY=".svc,10.0.0.0/8,192.168.0.0/16"
-ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
+NO_PROXY_ARRAY=(.svc 10.0.0.0/8 )
+NO_PROXY_ARRAY+=( $(hostname -I | awk -F. '{print $1"."$2"."$3".0/24"}'))
+
+
 if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-crio}"; fi
 
 # update os version
 function upate_os_version() {
-	if [[ -n "${CLR_VER}" ]]; then
-		sudo swupd repair -m "${CLR_VER}" --picky --force
-		return
-	fi
-	sudo swupd update
+        if [[ -n "${CLR_VER}" ]]; then
+                sudo swupd repair -m "${CLR_VER}" --picky --force
+                return
+        fi
+        sudo swupd update
 }
 
 # add depdencies such as k8s and crio
 function add_os_deps() {
-	sudo -E swupd bundle-add --quiet cloud-native-basic storage-utils
+        sudo -E swupd bundle-add --quiet cloud-native-basic storage-utils
 }
 
 # permanently disable swap
 function disable_swap() {
-	swapcount=$(sudo grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
+        swapcount=$(sudo grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
 
-	if [ "$swapcount" != "0" ]; then
-		sudo systemctl mask "$(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps)" 2>/dev/null
-	else
-		echo "Swap not enabled"
-	fi
+        if [ "$swapcount" != "0" ]; then
+                sudo systemctl mask "$(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps)" 2>/dev/null
+        else
+                echo "Swap not enabled"
+        fi
 }
 
 # enable ip forwarding
 function enable_ip_forwarding() {
-	#Ensure 'default' and 'all' rp_filter setting of strict mode (1)
-	#Inividual interfaces can still be configured to loose mode (2)
-	#However, loose mode is not supported by Project Calico/felix, per
-	#https://github.com/projectcalico/felix/issues/2082
-	#Alternative is to set loose mode on and set Calico to run anyway as
-	#described in the issue above.  However, loose mode is less secure
-	#than strict. (See: https://github.com/dcos/dcos/pull/454#issuecomment-238408590)
-	#This workaround can be removed when and if systemd reverts their
-	#rp_filter settings back to 1 for 'default' and 'all'.
-	sudo mkdir -p /etc/sysctl.d/
-	cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
+        #Ensure 'default' and 'all' rp_filter setting of strict mode (1)
+        #Inividual interfaces can still be configured to loose mode (2)
+        #However, loose mode is not supported by Project Calico/felix, per
+        #https://github.com/projectcalico/felix/issues/2082
+        #Alternative is to set loose mode on and set Calico to run anyway as
+        #described in the issue above.  However, loose mode is less secure
+        #than strict. (See: https://github.com/dcos/dcos/pull/454#issuecomment-238408590)
+        #This workaround can be removed when and if systemd reverts their
+        #rp_filter settings back to 1 for 'default' and 'all'.
+        sudo mkdir -p /etc/sysctl.d/
+        cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
 net.ipv4.ip_forward=1
 net.ipv4.conf.default.rp_filter=1
 net.ipv4.conf.all.rp_filter=1
 EOT
-	sudo systemctl restart systemd-sysctl
+        sudo systemctl restart systemd-sysctl
 
 }
 
 # ensure the modules we need are preloaded
 function setup_modules_load() {
-	sudo mkdir -p /etc/modules-load.d/
-	cat <<EOT | sudo bash -c "cat > /etc/modules-load.d/k8s.conf"
+        sudo mkdir -p /etc/modules-load.d/
+        cat <<EOT | sudo bash -c "cat > /etc/modules-load.d/k8s.conf"
 br_netfilter
 vhost_vsock
 overlay
@@ -71,23 +73,23 @@ EOT
 
 # ensure hosts file setup
 function setup_hosts() {
-	# Make sure /etc/hosts file exists
-	if [ ! -f /etc/hosts ]; then
-		sudo touch /etc/hosts
-	fi
-	# add localhost to /etc/hosts file
-	# shellcheck disable=SC2126
-	hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
-	if [ "$hostcount" == "0" ]; then
-		echo "127.0.0.1 localhost $(hostname)" | sudo bash -c "cat >> /etc/hosts"
-	else
-		echo "/etc/hosts already configured"
-	fi
+        # Make sure /etc/hosts file exists
+        if [ ! -f /etc/hosts ]; then
+                sudo touch /etc/hosts
+        fi
+        # add localhost to /etc/hosts file
+        # shellcheck disable=SC2126
+        hostcount=$(grep '127.0.0.1 localhost' /etc/hosts | wc -l)
+        if [ "$hostcount" == "0" ]; then
+                echo "127.0.0.1 localhost $(hostname)" | sudo bash -c "cat >> /etc/hosts"
+        else
+                echo "/etc/hosts already configured"
+        fi
 }
 
 # write increased limits to specified file
 function write_limits_conf() {
-	cat <<EOT | sudo bash -c "cat > $1"
+        cat <<EOT | sudo bash -c "cat > $1"
 [Service]
 LimitNOFILE=1048576
 LimitNPROC=1048576
@@ -99,63 +101,69 @@ EOT
 
 # update configuration to enable high pod counts
 function config_high_pod_count() {
-	# install bundle dependencies
-	sudo -E swupd bundle-add --quiet jq bc
+        # install bundle dependencies
+        sudo -E swupd bundle-add --quiet jq bc
 
-	# increase max inotify watchers
-	cat <<EOT | sudo bash -c "cat > /etc/sysctl.conf"
+        # increase max inotify watchers
+        cat <<EOT | sudo bash -c "cat > /etc/sysctl.conf"
 fs.inotify.max_queued_events=1048576
 fs.inotify.max_user_watches=1048576
 fs.inotify.max_user_instances=1048576
 EOT
-	sudo sysctl -q -p
+        sudo sysctl -q -p
 
-	# write configuration files
-	sudo mkdir -p /etc/systemd/system/kubelet.service.d
-	write_limits_conf "/etc/systemd/system/kubelet.service.d/limits.conf"
-	if [ "$RUNNER" == "containerd" ]; then
-		sudo mkdir -p /etc/systemd/system/containerd.service.d
-		write_limits_conf "/etc/systemd/system/containerd.service.d/limits.conf"
-	fi
-	if [ "$RUNNER" == "crio" ]; then
-		sudo mkdir -p /etc/systemd/system/crio.service.d
-		write_limits_conf "/etc/systemd/system/crio.service.d/limits.conf"
-	fi
+        # write configuration files
+        sudo mkdir -p /etc/systemd/system/kubelet.service.d
+        write_limits_conf "/etc/systemd/system/kubelet.service.d/limits.conf"
+        if [ "$RUNNER" == "containerd" ]; then
+                sudo mkdir -p /etc/systemd/system/containerd.service.d
+                write_limits_conf "/etc/systemd/system/containerd.service.d/limits.conf"
+        fi
+        if [ "$RUNNER" == "crio" ]; then
+                sudo mkdir -p /etc/systemd/system/crio.service.d
+                write_limits_conf "/etc/systemd/system/crio.service.d/limits.conf"
+        fi
 }
 
 # daemon reload
 function daemon_reload() {
-	sudo systemctl daemon-reload
+        sudo systemctl daemon-reload
 }
 
 # enable kubelet for $RUNNER
 function enable_kubelet_runner() {
-	# This will fail at this point, but puts it into a retry loop that
-	# will therefore startup later once we have configured with kubeadm.
-	sudo systemctl enable kubelet $RUNNER || true
+        # This will fail at this point, but puts it into a retry loop that
+        # will therefore startup later once we have configured with kubeadm.
+        sudo systemctl enable kubelet $RUNNER || true
 }
 
 # ensure that the system is ready without requiring a reboot
 function ensure_system_ready() {
-	sudo swapoff -a
-	sudo systemctl restart systemd-modules-load.service
+        sudo swapoff -a
+        sudo systemctl restart systemd-modules-load.service
 }
 
 # add proxy if found
 function setup_proxy() {
-	set +o nounset
-	if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
-		echo "Setting up proxy stuff...."
-		# Setup IP for users too
-		sed_val=${ADD_NO_PROXY//\//\\/}
-		[ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
-		if [ -f /etc/profile.d/proxy.sh ]; then
-			sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/profile.d/proxy.sh
-		else
-			echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
-		fi
+        set +o nounset
+        set +o errexit
+        if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
+                echo "Setting up proxy stuff...."
+                # Setup IP for users too
+                for ip in "${NO_PROXY_ARRAY[@]}"
+                do
+                   result=`grep no_proxy /etc/profile.d/proxy.sh | grep $ip`
+                   [ -z "$result" ] && ADD_NO_PROXY+="$ip,"
+                done
+                sed_val=${ADD_NO_PROXY//\//\\/}
+                [ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
+                if [ -f /etc/profile.d/proxy.sh ]; then
+                        sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/profile.d/proxy.sh
+                else
+                        echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
+                fi
 
-		services=("${RUNNER}" 'kubelet')
+                services=("${RUNNER}" 'kubelet')
                 cat <<EOF | sudo bash -c "cat > /usr/lib/systemd/system.conf.d/proxy.conf"
 [Manager]
 DefaultEnvironment="HTTP_PROXY=${http_proxy}"
@@ -165,13 +173,14 @@ DefaultEnvironment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
 EOF
 
         sudo systemctl daemon-reexec
-	fi
-	set -o nounset
+        fi
+        set -o nounset
+        set -o errexit
 }
 
 # init for performing any pre tasks
 function init() {
-	echo ""
+        echo ""
 }
 
 ###
@@ -179,8 +188,8 @@ function init() {
 ##
 
 if [[ -n "${CLRK8S_OS}" ]]; then
-	# shellcheck disable=SC1090
-	source "$(dirname "$0")/setup_system_${CLRK8S_OS}.sh"
+        # shellcheck disable=SC1090
+        source "$(dirname "$0")/setup_system_${CLRK8S_OS}.sh"
 fi
 
 echo "Init..."
@@ -198,8 +207,8 @@ setup_modules_load
 echo "Setting up /etc/hosts..."
 setup_hosts
 if [[ -n "${HIGH_POD_COUNT}" ]]; then
-	echo "Configure high pod count scaling..."
-	config_high_pod_count
+        echo "Configure high pod count scaling..."
+        config_high_pod_count
 fi
 echo "Reloading daemons..."
 daemon_reload
