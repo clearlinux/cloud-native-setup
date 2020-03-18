@@ -156,16 +156,15 @@ function setup_proxy() {
 		fi
 
 		services=("${RUNNER}" 'kubelet')
-		for s in "${services[@]}"; do
-			sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-			cat <<EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
-[Service]
-Environment="HTTP_PROXY=${http_proxy}"
-Environment="HTTPS_PROXY=${https_proxy}"
-Environment="SOCKS_PROXY=${socks_proxy}"
-Environment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
+                cat <<EOF | sudo bash -c "cat > /usr/lib/systemd/system.conf.d/proxy.conf"
+[Manager]
+DefaultEnvironment="HTTP_PROXY=${http_proxy}"
+DefaultEnvironment="HTTPS_PROXY=${https_proxy}"
+DefaultEnvironment="SOCKS_PROXY=${socks_proxy}"
+DefaultEnvironment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
 EOF
-		done
+
+        sudo systemctl daemon-reexec
 	fi
 	set -o nounset
 }
