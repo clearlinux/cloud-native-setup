@@ -7,3 +7,6 @@ spec:
   storage:
     directories:
      - path: /var/lib/rook
+mon:
+  allowMultiplePerNode: true
+  count: 3
