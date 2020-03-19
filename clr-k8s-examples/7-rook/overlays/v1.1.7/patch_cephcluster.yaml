@@ -9,3 +9,4 @@ spec:
      - path: /var/lib/rook
 mon:
   allowMultiplePerNode: true
+  count: 1
