@@ -8,4 +8,3 @@ patchesStrategicMerge:
   # patches rook to use 'directories' instead of partitions.
   # comment out to use partitions
   - patch_cephcluster.yaml
-  - patch_cephblockpool.yaml
