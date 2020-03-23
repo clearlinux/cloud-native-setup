@@ -4,6 +4,17 @@ metadata:
   name: rook-ceph
   namespace: rook-ceph
 spec:
+  mon:
+    allowMultiplePerNode: true
   storage:
     directories:
      - path: /var/lib/rook
+---
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: replicapool
+  namespace: rook-ceph
+spec:
+  replicated:
+    size: 1

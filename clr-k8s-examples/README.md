@@ -162,3 +162,12 @@ Grafana is available at this URL http://localhost:3000 . Default credentials are
 ## Cleaning up the cluster (Hard reset to a clean state)
 
 Run `reset_stack.sh` on all the nodes
+
+## Caveats
+
+### Rook
+* Rook is provisioned by default to allow multiple monitors on the same node if we do not have enough worker nodes.(Rook looks to spin up 3 monitor pods). If you have sufficient number of workers, the monitor pods automatically balanced across all of them.
+* To aid a single node setup, the default replica pool replicas is being set to 1 against the default of 3. If the user of this tool is using this in a production environment, we strongly recommend that the user create a ceph pool that is tailored to their use-case.
+
+#### Downside
+The downside of this setup will be when you start with less than optimal number of nodes and then add more. The monitor pods do not re-balance automatically and you might want to remove `allowMultiplePerNode` line from `patch_cephcluster.yaml` and re-deploy rook.
