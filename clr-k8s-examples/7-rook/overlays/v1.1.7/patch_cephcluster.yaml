@@ -6,6 +6,7 @@ metadata:
 spec:
   mon:
     allowMultiplePerNode: true
+    count: 1
   storage:
     directories:
      - path: /var/lib/rook
