@@ -1,3 +1,4 @@
+---
 apiVersion: ceph.rook.io/v1
 kind: CephCluster
 metadata:
@@ -6,4 +7,4 @@ metadata:
 spec:
   storage:
     directories:
-     - path: /var/lib/rook
+      - path: /var/lib/rook
