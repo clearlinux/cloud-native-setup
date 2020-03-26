@@ -1,7 +1,0 @@
-resources:
-  - rook/cluster/examples/kubernetes/ceph/operator.yaml
-  - rook/cluster/examples/kubernetes/ceph/cluster.yaml
-  - rook/cluster/examples/kubernetes/ceph/storageclass.yaml
-
-patchesStrategicMerge:
-  - patch_operator.yaml
