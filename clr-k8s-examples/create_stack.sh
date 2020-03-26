@@ -33,6 +33,7 @@ CNI=${CLRK8S_CNI:-"canal"}
 if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-"crio"}"; fi
 
 NFD_VER="${CLRK8S_NFD_VER:-v0.4.0}"
+mode="multinode"
 
 function print_usage_exit() {
 	exit_code=${1:-0}
@@ -108,6 +109,7 @@ function cluster_init() {
 	#Ensure single node k8s works
 	if [ "$(kubectl get nodes | wc -l)" -eq 2 ]; then
 		kubectl taint nodes --all node-role.kubernetes.io/master-
+		mode="standalone"
 	fi
 }
 
@@ -208,9 +210,9 @@ function storage() {
 	ROOK_DIR=7-rook
 
 	# get and apply rook
-	get_repo "${ROOK_URL}" "${ROOK_DIR}/overlays/${ROOK_VER}"
-	set_repo_version "${ROOK_VER}" "${ROOK_DIR}/overlays/${ROOK_VER}/rook"
-	kubectl apply -k "${ROOK_DIR}/overlays/${ROOK_VER}"
+	get_repo "${ROOK_URL}" "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}"
+	set_repo_version "${ROOK_VER}" "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}/rook"
+	kubectl apply -k "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}"
 	# wait for the rook OSDs to run which means rooks should be ready
 	while [[ $(kubectl get po --all-namespaces | grep -e 'osd.*Running.*' -c) -lt 1 ]]; do
 		echo "Waiting for Rook OSD"

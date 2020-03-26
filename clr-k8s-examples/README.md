@@ -162,3 +162,18 @@ Grafana is available at this URL http://localhost:3000 . Default credentials are
 ## Cleaning up the cluster (Hard reset to a clean state)
 
 Run `reset_stack.sh` on all the nodes
+
+## Additional Components
+
+### Rook
+The default Rook configuration provided is intended for testing purposes only
+and is not suitable for a production environment. By default Rook is configured
+to provide local storage (/var/lib/rook) and will be provisioned differently
+depending on whether or not you startup a single node Kubernetes cluster, or
+a multiple node Kubernetes cluster. 
+
+- When starting up a single node Kubernetes cluster, Rook will be configured
+to start up a single replica, and will allow multiple monitors on the same node.
+- When multiple Kubernetes worker nodes are detected, Rook will be configured
+to startup a replica on each available node and will schedule monitor processes
+on separate nodes providing greater reliability.
