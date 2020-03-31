@@ -204,7 +204,7 @@ if [[ -n "${HIGH_POD_COUNT}" ]]; then
 fi
 echo "Reloading daemons..."
 daemon_reload
-echo "Enabling Kublet runner..."
+echo "Enabling kubelet runner..."
 enable_kubelet_runner
 echo "Ensuring system is ready..."
 ensure_system_ready
