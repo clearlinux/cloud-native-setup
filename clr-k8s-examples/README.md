@@ -66,7 +66,7 @@ devicemapper storage. This should not be used for production.
 ### For HA, setup the load balancer node
 
 Ideally, the load balancer node will be a separate node. However, one of the
-master nodes can also server as the load balancer for the cluster. [HAProxy](https://www.haproxy.org/)
+master nodes can also serve as the load balancer for the cluster. [HAProxy](https://www.haproxy.org/)
 is used in these instructions.
 
 ```bash
