@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -o errexit
 set -o nounset
 
@@ -9,8 +8,9 @@ CLR_VER=${CLRK8S_CLR_VER:-""}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
 
 # set no proxy
-ADD_NO_PROXY=".svc,10.0.0.0/8,192.168.0.0/16"
-ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
+NO_PROXY_ARRAY=(.svc 10.0.0.0/8 )
+NO_PROXY_ARRAY+=( $(hostname -I | awk -F. '{print $1"."$2"."$3".0/24"}'))
+
 if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-crio}"; fi
 
 # update os version
@@ -144,9 +144,15 @@ function ensure_system_ready() {
 # add proxy if found
 function setup_proxy() {
 	set +o nounset
+	set +o errexit
 	if [[ ${http_proxy} ]] || [[ ${HTTP_PROXY} ]]; then
 		echo "Setting up proxy stuff...."
 		# Setup IP for users too
+		for ip in "${NO_PROXY_ARRAY[@]}"
+                do
+                   result=`grep no_proxy /etc/profile.d/proxy.sh | grep $ip`
+                   [ -z "$result" ] && ADD_NO_PROXY+="$ip,"
+                done
 		sed_val=${ADD_NO_PROXY//\//\\/}
 		[ -f /etc/environment ] && sudo sed -i "/no_proxy/I s/$/,${sed_val}/g" /etc/environment
 		if [ -f /etc/profile.d/proxy.sh ]; then
@@ -155,19 +161,18 @@ function setup_proxy() {
 			echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
 		fi
 
-		services=("${RUNNER}" 'kubelet')
-		for s in "${services[@]}"; do
-			sudo mkdir -p "/etc/systemd/system/${s}.service.d/"
-			cat <<EOF | sudo bash -c "cat > /etc/systemd/system/${s}.service.d/proxy.conf"
-[Service]
-Environment="HTTP_PROXY=${http_proxy}"
-Environment="HTTPS_PROXY=${https_proxy}"
-Environment="SOCKS_PROXY=${socks_proxy}"
-Environment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
+		cat <<EOF | sudo bash -c "cat > /usr/lib/systemd/system.conf.d/proxy.conf"
+[Manager]
+DefaultEnvironment="HTTP_PROXY=${http_proxy}"
+DefaultEnvironment="HTTPS_PROXY=${https_proxy}"
+DefaultEnvironment="SOCKS_PROXY=${socks_proxy}"
+DefaultEnvironment="NO_PROXY=${no_proxy},${ADD_NO_PROXY}"
 EOF
-		done
-	fi
-	set -o nounset
+
+        sudo systemctl daemon-reexec
+        fi
+        set -o nounset
+        set -o errexit
 }
 
 # init for performing any pre tasks
