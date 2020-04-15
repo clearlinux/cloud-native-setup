@@ -38,7 +38,7 @@ add_pair_ns() {
 	ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
 
 	ip netns exec $CNI_CONTAINERID ip link add $CNI_IFNAME type veth peer name $peer
-	ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME addr $mac up
+	ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME addr $mac up alias $vfpci
 	ip netns exec $CNI_CONTAINERID ip link set $peer up
 	ip netns exec $CNI_CONTAINERID ip addr add $ip dev $CNI_IFNAME
 }
