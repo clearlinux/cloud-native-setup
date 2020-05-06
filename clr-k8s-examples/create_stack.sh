@@ -170,7 +170,7 @@ function cni() {
 
 function metrics() {
 	METRICS_VER="${1:-$METRICS_VER}"
-	METRICS_URL="https://github.com/kubernetes-incubator/metrics-server.git"
+	METRICS_URL="https://github.com/kubernetes-sigs/metrics-server.git"
 	METRICS_DIR="1-core-metrics"
 	get_repo "${METRICS_URL}" "${METRICS_DIR}/overlays/${METRICS_VER}"
 	set_repo_version "${METRICS_VER}" "${METRICS_DIR}/overlays/${METRICS_VER}/metrics-server"
