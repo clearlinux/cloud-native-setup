@@ -156,17 +156,17 @@ run() {
 		kubectl rollout status --timeout=${wait_time}s deployment/${deployment}
 		kubectl expose --port=8080 deployment $deployment
 
-        # Check service exposed
-        cmd="kubectl get services $deployment -n default --no-headers=true"
-        waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "Waiting for service"
+		# Check service exposed
+		cmd="kubectl get services $deployment -n default --no-headers=true"
+		waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "Waiting for service"
 
 		IP=$(kubectl get services $deployment -n default --no-headers=true | awk '{printf $3}')
 		end_net=$(date +%s%N)
 		info "IP: $IP"
 
 		# service health check
-        cmd="curl --noproxy \"*\" http://$IP:8080/healthz"
-        waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "http server is not ready yet!!"
+		cmd="curl --noproxy \"*\" http://$IP:8080/healthz"
+		waitForProcess "$proc_wait_time" "$proc_sleep_time" "$cmd" "http server is not ready yet!!"
 
 		RESP=$(curl -s --noproxy "*" http://$IP:8080/echo?msg=curl%20request%20to%20$deployment)
 		local end_time=$(date +%s%N)
