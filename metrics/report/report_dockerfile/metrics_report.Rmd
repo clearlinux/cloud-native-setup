@@ -32,7 +32,7 @@ This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s
 measures the time taken to launch and delete pods in parallel using a deployment. The times
 are how long it takes for the whole deployment operation to complete.
 
-```{r parallel, echo=FALSE, fig.cap="K8S parallel pods"}
+```{r parallel, echo=FALSE, fig.cap="K8S parallel pods", results='asis'}
 source('parallel.R')
 ```
 
@@ -57,7 +57,7 @@ This table describes the test system details, as derived from the information co
 in the test results files.
 
 
-```{r dut, echo=FALSE, fig.cap="System configuration details"}
+```{r dut, echo=FALSE, fig.cap="System configuration details", results='asis'}
 source('dut-details.R')
 ```
 
@@ -67,6 +67,6 @@ source('dut-details.R')
 
 This table describes node details within the Kubernetes cluster that have been used for test.
 
-```{r node, echo=FALSE, fig.cap="Node information within Kubernetes cluster"}
+```{r node, echo=FALSE, fig.cap="Node information within Kubernetes cluster", results='asis'}
 source('node-info.R')
 ```

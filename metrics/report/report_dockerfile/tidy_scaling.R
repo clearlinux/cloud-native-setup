@@ -205,7 +205,7 @@ render_tidy_scaling <- function()
 	# Check if we got any stats at all by checking the memstats data. If we found no data,
 	# abort early and nicely
 	if ( length(memstats) == 0 ) {
-		cat("No results files found for scaling tests\n")
+		cat("No results files found for scaling tests\n\n")
 		return()
 	}
 
