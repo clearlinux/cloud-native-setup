@@ -161,7 +161,8 @@ function setup_proxy() {
 			echo "Warning, failed to find /etc/profile.d/proxy.sh to edit no_proxy line"
 		fi
 
-		cat <<EOF | sudo bash -c "cat > /usr/lib/systemd/system.conf.d/proxy.conf"
+		sudo mkdir -p /etc/systemd/system.conf.d
+		cat <<EOF | sudo bash -c "cat > /etc/systemd/system.conf.d/proxy.conf"
 [Manager]
 DefaultEnvironment="HTTP_PROXY=${http_proxy}"
 DefaultEnvironment="HTTPS_PROXY=${https_proxy}"
