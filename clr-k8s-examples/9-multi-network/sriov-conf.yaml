@@ -11,15 +11,15 @@ data:
       [
         {
           "resourceName": "sriov_netdevice",
-          "rootDevices": ["07:00.0"],
-          "sriovMode": true,
-          "deviceType": "netdevice"
+          "selectors": {
+                  "drivers": ["i40evf", "iavf"]
+          }
         },
         {
           "resourceName": "sriov_vfio",
-          "rootDevices": ["07:00.1"],
-          "sriovMode": true,
-          "deviceType": "vfio"
+          "selectors": {
+                  "drivers": ["vfio-pci"]
+          }
         }
       ]
     }

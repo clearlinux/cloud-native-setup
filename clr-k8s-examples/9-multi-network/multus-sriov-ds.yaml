@@ -2,25 +2,34 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  # name must match the spec fields below, and be in the form: <plural>.<group>
   name: network-attachment-definitions.k8s.cni.cncf.io
 spec:
-  # group name to use for REST API: /apis/<group>/<version>
   group: k8s.cni.cncf.io
-  # version name to use for REST API: /apis/<group>/<version>
-  version: v1
-  # either Namespaced or Cluster
   scope: Namespaced
   names:
-    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
     plural: network-attachment-definitions
-    # singular name to be used as an alias on the CLI and for display
     singular: network-attachment-definition
-    # kind is normally the CamelCased singular type. Your resource manifests use this.
     kind: NetworkAttachmentDefinition
-    # shortNames allow shorter string to match your resource on the CLI
     shortNames:
     - net-attach-def
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: 'NetworkAttachmentDefinition is a CRD schema specified by the Network Plumbing
+            Working Group to express the intent for attaching pods to one or more logical or physical
+            networks. More information available at: https://github.com/k8snetworkplumbingwg/multi-net-spec'
+          type: object
+          properties:
+            spec:
+              description: 'NetworkAttachmentDefinition spec defines the desired state of a network attachment'
+              type: object
+              properties:
+                config:
+                  description: 'NetworkAttachmentDefinition config is a JSON-formatted CNI configuration'
+                  type: string
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -40,17 +49,43 @@ type: kubernetes.io/service-account-token
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: multus-pod-networks-lister
+  name: multus-pod-updater
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get"]
-- apiGroups: [""]
-  resources: ["pods/status"]
-  verbs: ["update"]
-- apiGroups: ["k8s.cni.cncf.io"]
-  resources: ["*"]
-  verbs: ["get"]
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources:
+      - '*'
+    verbs:
+      - '*'
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/status
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: multus-rb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multus-pod-updater
+subjects:
+- kind: ServiceAccount
+  name: multus-sa
+  namespace: kube-system
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -94,8 +129,9 @@ data:
     MASTER_PLUGIN_JSON="$(cat /host/etc/cni/net.d/$MASTER_PLUGIN)"
     cat > /host/etc/cni/net.d/00-multus.conf <<EOF
     {
+      "cniVersion": "0.3.1",
       "name": "multus-cni-network",
-      "type": "multus",
+      "type": "multus-cni",
       "logFile": "/var/log/multus.log",
       "logLevel": "debug",
       "kubeconfig": "/etc/cni/net.d/multus-kubeconfig",
@@ -104,19 +140,6 @@ data:
        ]
     }
     EOF
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: multus-rb
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: multus-pod-networks-lister
-subjects:
-- kind: ServiceAccount
-  name: multus-sa
-  namespace: kube-system
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -134,14 +157,14 @@ spec:
     spec:
       initContainers:
       - name: multus
-        image: krsna1729/multus-sriov:k8s-1.13
+        image: krsna1729/multus-sriov:3.4.2-2.3-3.2
         command: [ "bash", "-c" ]
         args:
-        - cp /tmp/cni/bin/{multus,sriov,vfioveth,jq} /host/opt/cni/bin/;
+        - cp /tmp/cni/bin/{multus-cni,sriov,vfioveth,jq} /host/opt/cni/bin/;
           /tmp/multus/install-multus-conf.sh;
           /tmp/multus/install-certs.sh;
           echo "Restarting crio kubelet";
-          systemctl restart crio; # Needed when crio manages ns lifecycle
+          systemctl restart crio;
           systemctl restart kubelet;
         volumeMounts:
         - name: usr-bin
@@ -160,7 +183,7 @@ spec:
           mountPath: /run/systemd
       containers:
       - name: sriovdp
-        image: krsna1729/multus-sriov:k8s-1.13
+        image: krsna1729/multus-sriov:3.4.2-2.3-3.2
         command: [ "sh", "-c" ]
         args:
         - /usr/bin/sriovdp --logtostderr -v 10;
@@ -209,4 +232,3 @@ spec:
           path: /var/lib/kubelet/device-plugins/
       hostNetwork: true
       hostPID: true
-
