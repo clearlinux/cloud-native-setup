@@ -1,0 +1,100 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dpdk-1711
+  annotations:
+      k8s.v1.cni.cncf.io/networks: sriov-net-dpdk
+spec:
+  restartPolicy: Never
+  containers:
+  - name: dpdk
+    image: krsna1729/dpdk:17.11
+    stdin: true
+    tty: true
+    command: [ "/bin/bash", "-c"]
+    args:
+    - ls -l /dev/vfio;
+      testpmd --no-huge -m 2048 -- --stats-period=10 --nb-port=1 --port-topology=chained --auto-start --total-num-mbufs=2048 --forward-mode=macswap;
+    securityContext:
+      capabilities:
+        add:
+        - IPC_LOCK
+    resources:
+      limits:
+        intel.com/sriov_vfio: '1'
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dpdk-1811
+  annotations:
+      k8s.v1.cni.cncf.io/networks: sriov-net-dpdk
+spec:
+  restartPolicy: Never
+  containers:
+  - name: dpdk
+    image: krsna1729/dpdk:18.11
+    stdin: true
+    tty: true
+    command: [ "/bin/bash", "-c"]
+    args:
+    - ls -l /dev/vfio;
+      testpmd --no-huge -m 2048 -- --stats-period=10 --nb-port=1 --port-topology=chained --auto-start --total-num-mbufs=2048 --forward-mode=macswap;
+    securityContext:
+      capabilities:
+        add:
+        - IPC_LOCK
+    resources:
+      limits:
+        intel.com/sriov_vfio: '1'
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dpdk-1911
+  annotations:
+      k8s.v1.cni.cncf.io/networks: sriov-net-dpdk
+spec:
+  restartPolicy: Never
+  containers:
+  - name: dpdk
+    image: krsna1729/dpdk:19.11
+    stdin: true
+    tty: true
+    command: [ "/bin/bash", "-c"]
+    args:
+    - ls -l /dev/vfio;
+      testpmd --no-huge -m 2048 -- --stats-period=10 --nb-port=1 --port-topology=chained --auto-start --total-num-mbufs=2048 --forward-mode=macswap;
+    securityContext:
+      capabilities:
+        add:
+        - IPC_LOCK
+    resources:
+      limits:
+        intel.com/sriov_vfio: '1'
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dpdk-2002
+  annotations:
+      k8s.v1.cni.cncf.io/networks: sriov-net-dpdk
+spec:
+  restartPolicy: Never
+  containers:
+  - name: dpdk
+    image: krsna1729/dpdk:20.02
+    stdin: true
+    tty: true
+    command: [ "/bin/bash", "-c"]
+    args:
+    - ls -l /dev/vfio;
+      testpmd --no-huge -m 2048 -- --stats-period=10 --nb-port=1 --port-topology=chained --auto-start --total-num-mbufs=2048 --forward-mode=macswap;
+    securityContext:
+      capabilities:
+        add:
+        - IPC_LOCK
+    resources:
+      limits:
+        intel.com/sriov_vfio: '1'
