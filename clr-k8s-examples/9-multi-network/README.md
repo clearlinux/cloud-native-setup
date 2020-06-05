@@ -9,11 +9,10 @@ directories on the host with the necessary binaries and configuration files.
 
 ### Customization
 
-The device plugin will register the SR-IOV enabled devices on the host, specified as
-`rootDevices` in [sriov-conf.yaml](sriov-conf.yaml). Helper [systemd unit](systemd/sriov.service)
-file is provided, which enables SR-IOV for the above `rootDevices`
-
-> NOTE: This assumes homogenous nodes in the cluster
+The device plugin will register the SR-IOV enabled devices on the host, specified with
+`selectors` in [sriov-conf.yaml](sriov-conf.yaml). Helper [systemd unit](systemd/sriov.service)
+file is provided, which enables SR-IOV for the above devices. More config options
+are listed [here](https://github.com/intel/sriov-network-device-plugin#configurations).
 
 ### Pre-req (SR-IOV only)
 
