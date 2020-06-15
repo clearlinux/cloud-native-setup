@@ -16,7 +16,7 @@ $box = "AntonioMeireles/ClearLinux"
 $box_ver = (ENV['CLEAR_VBOX_VER'])
 File.exists?("/usr/share/qemu/OVMF.fd") ? $loader = "/usr/share/qemu/OVMF.fd" : $loader = File.join(File.dirname(__FILE__), "OVMF.fd")
 $vm_name_prefix = "clr"
-$base_ip = IPAddr.new("192.52.100.10")
+$base_ip = IPAddr.new("10.10.100.10")
 $hosts = {}
 $proxy_ip_list = "192.168.121.0/24"
 $driveletters = ('a'..'z').to_a
