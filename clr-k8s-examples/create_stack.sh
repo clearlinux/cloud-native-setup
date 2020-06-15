@@ -14,6 +14,8 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 : ${MASTER_IP:=}
 : ${CERT_SANS:=}
 HIGH_POD_COUNT=${HIGH_POD_COUNT:-""}
+LOAD_BALANCER_IP=${LOAD_BALANCER_IP:-""}
+LOAD_BALANCER_PORT="${LOAD_BALANCER_PORT:-6444}"
 
 # versions
 CANAL_VER="${CLRK8S_CANAL_VER:-v3.10}"
@@ -90,7 +92,13 @@ function cluster_init() {
 		echo "/var/lib/etcd exists! skipping init."
 		return
 	fi
-	sudo -E kubeadm init --config=./kubeadm.yaml
+
+	if [[ -n "${LOAD_BALANCER_IP}" ]]; then
+		sed -i "s/ClusterConfiguration/ClusterConfiguration\ncontrolPlaneEndpoint: ${LOAD_BALANCER_IP}:${LOAD_BALANCER_PORT}/g" ./kubeadm.yaml
+	fi
+	# upload-certs will automatically upload certificates that should be shared
+	# across control-plane nodes in HA clusters. It is harmless in non-HA cases.
+	sudo -E kubeadm init --upload-certs --config=./kubeadm.yaml
 
 	rm -rf "${HOME}/.kube"
 	mkdir -p "${HOME}/.kube"
