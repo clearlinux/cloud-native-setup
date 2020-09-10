@@ -50,9 +50,9 @@ delete_pair_ns() {
 case $CNI_COMMAND in
 ADD)
 	res=$(ipam)
-	ip=$(echo $res | jq -r '.ip4.ip')
+	ip=$(echo $res | jq -r '.ips[0].address')
 	add_pair_ns $ip
-	echo '{"cniVersion":"0.2.0"}' | jq -c --arg ip $ip '.ip4.ip = $ip' >&3
+	echo '{"cniVersion":"0.3.1"}' | jq -c --arg ip $ip '.ips[0].address = $ip' >&3
 	;;
 DEL)
 	set +o errexit
