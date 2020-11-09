@@ -51,6 +51,18 @@ source('collectd_scaling.R')
 
 \pagebreak
 
+# Pod communication latency
+This [test](https://github.com/clearlinux/cloud-native-setup/metrics/scaling/k8s_scale_rapid_nc.sh)
+measures pod query--response latency when scaling up. The
+time is measured from sending a message directly to a socket, that `nc`
+listens to inside each pod, to reading the response from the pod.
+
+```{r scaling_nc, echo=FALSE, fig.cap="K8S pod communication latency", results='asis'}
+source('tidy_scaling_nc.R')
+```
+
+\pagebreak
+
 # Test setup details
 
 This table describes the test system details, as derived from the information contained
