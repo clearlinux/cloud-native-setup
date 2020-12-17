@@ -29,13 +29,10 @@ function add_os_deps() {
 
 # permanently disable swap
 function disable_swap() {
-	swapcount=$(sudo grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
-
-	if [ "$swapcount" != "0" ]; then
-		sudo systemctl mask "$(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps)" 2>/dev/null
-	else
-		echo "Swap not enabled"
-	fi
+	# disable current swap
+	sudo swapoff -a
+	# permanently disable swap
+	sudo systemctl mask swap.target
 }
 
 # enable ip forwarding
@@ -137,7 +134,6 @@ function enable_kubelet_runner() {
 
 # ensure that the system is ready without requiring a reboot
 function ensure_system_ready() {
-	sudo swapoff -a
 	sudo systemctl restart systemd-modules-load.service
 }
 
@@ -192,12 +188,12 @@ fi
 
 echo "Init..."
 init
+echo "Disabling swap..."
+disable_swap
 echo "Setting OS Version..."
 upate_os_version
 echo "Adding OS Dependencies..."
 add_os_deps
-echo "Disabling swap..."
-disable_swap
 echo "Enabling IP Forwarding..."
 enable_ip_forwarding
 echo "Setting up modules to load..."
