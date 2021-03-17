@@ -3,6 +3,11 @@
 ## Prerequisite
 This setup currently will work with Kubernetes 1.14 & above. Any version of Kubernetes before that might work, but is not guaranteed.
 
+## QUICK NOTE
+The version of Kubernetes* was bumped from 1.17.7 to 1.19.4 in Clear Linux* OS release 34090. The [guide](https://docs.01.org/clearlinux/latest/guides/clear/k8s-migration.html) and the Clear Linux OS bundle k8s-migration were created to help facilitate migration of a cluster from 1.17.x to the latest 1.19.x .
+
+The new Clear Linux OS bundle k8s-migration was added in Clear Linux* OS release 34270. Please follow the guide for an upgrade.
+
 ## Sample multi-node vagrant setup
 
 To be able to test this tool, you can create a 3-node vagrant setup. In this tutorial, we will talk about using [libvirt](https://github.com/vagrant-libvirt/vagrant-libvirt), but you can use any hypervisor that you are familiar with.
