@@ -18,9 +18,10 @@ LOAD_BALANCER_IP=${LOAD_BALANCER_IP:-""}
 LOAD_BALANCER_PORT="${LOAD_BALANCER_PORT:-6444}"
 
 # versions
-CANAL_VER="${CLRK8S_CANAL_VER:-v3.10}"
-CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.6.4}"
-FLANNEL_VER="${CLRK8S_FLANNEL_VER:-960b3243b9a7faccdfe7b3c09097105e68030ea7}"
+CANAL_VER="${CLRK8S_CANAL_VER:-v3.18}"
+CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.9}"
+FLANNEL_VER="${CLRK8S_FLANNEL_VER:-v0.14.0-rc1}"
+CILIUM_VAL_OVERRIDE=""
 K8S_VER="${CLRK8S_K8S_VER:-}"
 KATA_VER="${CLRK8S_KATA_VER:-1.9.1-kernel-config}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.2.6}"
@@ -167,7 +168,10 @@ function cni() {
 
 		get_repo "${CILIUM_URL}" "${CILIUM_DIR}/overlays/${CILIUM_VER}"
 		set_repo_version "${CILIUM_VER}" "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/"
-		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" --namespace kube-system --set global.containerRuntime.integration="$RUNNER" | kubectl apply -f -
+		if [ -f "${CILIUM_DIR}/overlays/${CILIUM_VER}/values.yaml" ]; then
+			CILIUM_VAL_OVERRIDE="--values ${CILIUM_DIR}/overlays/${CILIUM_VER}/values.yaml"
+		fi
+		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" ${CILIUM_VAL_OVERRIDE} --namespace kube-system --set global.containerRuntime.integration="$RUNNER" | kubectl apply -f -
 		;;
 	*)
 		echo"Unknown cni $CNI"
