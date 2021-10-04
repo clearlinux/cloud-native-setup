@@ -84,7 +84,7 @@ framework_init() {
 	k8s_api_init
 
 	# Launch our stats gathering pod
-	if [ -n "$SMF_USE_COLLECTD" ]; then
+	if [ "$SMF_USE_COLLECTD" == "true" ]; then
 		info "Setting up collectd"
 		init_stats $wait_time
 	fi
@@ -104,7 +104,7 @@ framework_shutdown() {
 	k8s_api_shutdown
 	cpu_load_shutdown
 
-	if [ -n "$SMF_USE_COLLECTD" ]; then
+	if [ "$SMF_USE_COLLECTD" == "true" ]; then
 		cleanup_stats
 	fi
 
