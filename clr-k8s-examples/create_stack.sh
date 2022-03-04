@@ -18,9 +18,9 @@ LOAD_BALANCER_IP=${LOAD_BALANCER_IP:-""}
 LOAD_BALANCER_PORT="${LOAD_BALANCER_PORT:-6444}"
 
 # versions
-CANAL_VER="${CLRK8S_CANAL_VER:-v3.18}"
-CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.9}"
-FLANNEL_VER="${CLRK8S_FLANNEL_VER:-v0.14.0-rc1}"
+CANAL_VER="${CLRK8S_CANAL_VER:-v3.22}"
+CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.9.13}"
+FLANNEL_VER="${CLRK8S_FLANNEL_VER:-v0.16.3}"
 CILIUM_VAL_OVERRIDE=""
 K8S_VER="${CLRK8S_K8S_VER:-}"
 KATA_VER="${CLRK8S_KATA_VER:-1.9.1-kernel-config}"
@@ -145,7 +145,7 @@ function cni() {
 
 		# canal manifests are not kept in repo but in docs site so use curl
 		mkdir -p "${CANAL_DIR}/overlays/${CANAL_VER}/canal"
-		curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
+		curl -L -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/canal.yaml" "$CANAL_URL/canal.yaml"
 		if [[ "$CANAL_VER" == "v3.3" ]]; then
 			curl -o "${CANAL_DIR}/overlays/${CANAL_VER}/canal/rbac.yaml" "$CANAL_URL/rbac.yaml"
 		fi
@@ -154,7 +154,7 @@ function cni() {
 		;;
 	flannel)
 		FLANNEL_VER=${1:-$FLANNEL_VER}
-		FLANNEL_URL="https://github.com/coreos/flannel"
+		FLANNEL_URL="https://github.com/flannel-io/flannel"
 		FLANNEL_DIR="0-flannel"
 
 		get_repo "${FLANNEL_URL}" "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
@@ -162,6 +162,7 @@ function cni() {
 		kubectl apply -k "${FLANNEL_DIR}/overlays/${FLANNEL_VER}"
 		;;
 	cilium)
+		local podsubnet=$(grep -Po 'podSubnet:\ \K[^*]*' ${SCRIPT_DIR}/kubeadm.yaml)
 		CILIUM_VER=${1:-$CILIUM_VER}
 		CILIUM_URL="https://github.com/cilium/cilium.git"
 		CILIUM_DIR="0-cilium"
@@ -171,7 +172,7 @@ function cni() {
 		if [ -f "${CILIUM_DIR}/overlays/${CILIUM_VER}/values.yaml" ]; then
 			CILIUM_VAL_OVERRIDE="--values ${CILIUM_DIR}/overlays/${CILIUM_VER}/values.yaml"
 		fi
-		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" ${CILIUM_VAL_OVERRIDE} --namespace kube-system --set global.containerRuntime.integration="$RUNNER" | kubectl apply -f -
+		helm template "${CILIUM_DIR}/overlays/${CILIUM_VER}/cilium/install/kubernetes/cilium" --namespace kube-system --set containerRuntime.integration="$RUNNER" --set hubble.enabled=false --set ipam.operator.clusterPoolIPv4PodCIDR="${podsubnet}" | kubectl apply -f -
 		;;
 	*)
 		echo"Unknown cni $CNI"
