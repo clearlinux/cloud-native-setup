@@ -1,0 +1,8 @@
+resources:
+  - rook/deploy/examples/cluster.yaml
+  - rook/deploy/examples/csi/rbd/storageclass.yaml
+
+patchesStrategicMerge:
+  # patches rook to use 'directories' instead of partitions.
+  # comment out to use partitions
+  - patch_cephcluster.yaml
