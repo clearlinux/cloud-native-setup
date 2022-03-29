@@ -23,15 +23,15 @@ CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.9.13}"
 FLANNEL_VER="${CLRK8S_FLANNEL_VER:-v0.16.3}"
 CILIUM_VAL_OVERRIDE=""
 K8S_VER="${CLRK8S_K8S_VER:-}"
-KATA_VER="${CLRK8S_KATA_VER:-1.9.1-kernel-config}"
-ROOK_VER="${CLRK8S_ROOK_VER:-v1.2.6}"
-METRICS_VER="${CLRK8S_METRICS_VER:-v0.3.6}"
+KATA_VER="${CLRK8S_KATA_VER:-2.3.3}"
+ROOK_VER="${CLRK8S_ROOK_VER:-v1.8.6}"
+METRICS_VER="${CLRK8S_METRICS_VER:-v0.6.1}"
 DASHBOARD_VER="${CLRK8S_DASHBOARD_VER:-v2.0.0-beta2}"
 INGRES_VER="${CLRK8S_INGRES_VER:-nginx-0.26.1}"
 EFK_VER="${CLRK8S_EFK_VER:-v1.15.1}"
 METALLB_VER="${CLRK8S_METALLB_VER:-v0.8.3}"
 NPD_VER="${CLRK8S_NPD_VER:-v0.6.6}"
-PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-f458e85e5d7675f7bc253072e1b4c8892b51af0f}"
+PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-v0.10.0}"
 CNI=${CLRK8S_CNI:-"canal"}
 if [[ -z "${RUNNER+x}" ]]; then RUNNER="${CLRK8S_RUNNER:-"crio"}"; fi
 
@@ -124,11 +124,13 @@ function cluster_init() {
 
 function kata() {
 	KATA_VER=${1:-$KATA_VER}
-	KATA_URL="https://github.com/kata-containers/packaging.git"
+	KATA_URL="https://github.com/kata-containers/kata-containers.git"
 	KATA_DIR="8-kata"
 	get_repo "${KATA_URL}" "${KATA_DIR}/overlays/${KATA_VER}"
-	set_repo_version "${KATA_VER}" "${KATA_DIR}/overlays/${KATA_VER}/packaging"
-	kubectl apply -k "${KATA_DIR}/overlays/${KATA_VER}"
+	set_repo_version "${KATA_VER}" "${KATA_DIR}/overlays/${KATA_VER}/kata-containers"
+	kubectl apply -f "${KATA_DIR}/overlays/${KATA_VER}/kata-containers/tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"
+	kubectl apply -f "${KATA_DIR}/overlays/${KATA_VER}/kata-containers/tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"
+	kubectl apply -f "${KATA_DIR}/overlays/${KATA_VER}/kata-containers/tools/packaging/kata-deploy/runtimeclasses/kata-runtimeClasses.yaml"
 
 }
 
@@ -183,21 +185,19 @@ function cni() {
 
 function metrics() {
 	METRICS_VER="${1:-$METRICS_VER}"
-	METRICS_URL="https://github.com/kubernetes-sigs/metrics-server.git"
+	METRICS_URL="https://github.com/kubernetes-sigs/metrics-server/releases/download/${METRICS_VER}/components.yaml"
 	METRICS_DIR="1-core-metrics"
-	get_repo "${METRICS_URL}" "${METRICS_DIR}/overlays/${METRICS_VER}"
-	set_repo_version "${METRICS_VER}" "${METRICS_DIR}/overlays/${METRICS_VER}/metrics-server"
-	kubectl apply -k "${METRICS_DIR}/overlays/${METRICS_VER}"
+
+	curl -L ${METRICS_URL} --output - >${METRICS_DIR}/overlays/${METRICS_VER}/components.yaml
+	kubectl apply -k "${METRICS_DIR}/overlays/${METRICS_VER}/"
 
 }
 function wait_on_pvc() {
 	# create and destroy pvc until successful
 	while [[ $(kubectl get pvc test-pv-claim --no-headers | grep Bound -c) -ne 1 ]]; do
 		sleep 30
-		kubectl delete pvc test-pv-claim
-		create_pvc
-		sleep 10
 	done
+	kubectl delete pvc test-pv-claim
 }
 function create_pvc() {
 	kubectl apply -f - <<HERE
@@ -222,9 +222,19 @@ function storage() {
 	ROOK_URL="https://github.com/rook/rook.git"
 	ROOK_DIR=7-rook
 
+  # This function might be called standalone, so good to check the mode we are in.
+	if [ "$(kubectl get nodes --no-headers | wc -l)" -eq 1 ]; then
+		mode="standalone"
+	fi
+
 	# get and apply rook
 	get_repo "${ROOK_URL}" "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}"
 	set_repo_version "${ROOK_VER}" "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}/rook"
+	kubectl apply -f ${ROOK_DIR}/overlays/${ROOK_VER}/${mode}/rook/deploy/examples/crds.yaml -f ${ROOK_DIR}/overlays/${ROOK_VER}/${mode}/rook/deploy/examples/common.yaml -f ${ROOK_DIR}/overlays/${ROOK_VER}/${mode}/rook/deploy/examples/operator.yaml
+	while [[ $(kubectl get po -n rook-ceph --field-selector=status.phase=Running | grep -e 'operator' -c) -lt 1 ]]; do
+		echo "Waiting on operator"
+		sleep 10
+	done
 	kubectl apply -k "${ROOK_DIR}/overlays/${ROOK_VER}/${mode}"
 	# wait for the rook OSDs to run which means rooks should be ready
 	while [[ $(kubectl get po --all-namespaces | grep -e 'osd.*Running.*' -c) -lt 1 ]]; do
@@ -246,12 +256,13 @@ function monitoring() {
 	PROMETHEUS_DIR="4-kube-prometheus"
 	get_repo "${PROMETHEUS_URL}" "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}"
 	set_repo_version "${PROMETHEUS_VER}" "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus"
-	kubectl apply -k "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}"
+	kubectl apply --server-side -f "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus/manifests/setup/"
 
-	while [[ $(kubectl get crd alertmanagers.monitoring.coreos.com prometheuses.monitoring.coreos.com prometheusrules.monitoring.coreos.com servicemonitors.monitoring.coreos.com >/dev/null 2>&1) || $? -ne 0 ]]; do
-		echo "Waiting for Prometheus CRDs"
-		sleep 2
+	while ! $(kubectl get servicemonitors --all-namespaces) ; do
+		echo "Waiting for prometheus crds"
+		sleep 10
 	done
+	kubectl apply -k "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/"
 
 	#Expose the dashboards
 	#kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090 &
@@ -382,6 +393,8 @@ command_handlers[monitoring]=monitoring
 command_handlers[metallb]=metallb
 command_handlers[npd]=npd
 command_handlers[nfd]=nfd
+command_handlers[kata]=kata
+command_handlers[metrics]=metrics
 
 declare -A command_help
 command_help[init]="Only inits a cluster using kubeadm"
