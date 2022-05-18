@@ -139,7 +139,7 @@ function cni() {
 	canal)
 		# note version is not semver
 		CANAL_VER=${1:-$CANAL_VER}
-		CANAL_URL="https://docs.projectcalico.org/${CANAL_VER}/manifests"
+		CANAL_URL="https://projectcalico.docs.tigera.io/archive/${CANAL_VER}/manifests"
 		if [[ "$CANAL_VER" == "v3.3" ]]; then
 			CANAL_URL="https://docs.projectcalico.org/v3.3/getting-started/kubernetes/installation/hosted/canal"
 		fi
