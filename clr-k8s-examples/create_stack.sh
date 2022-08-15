@@ -258,7 +258,7 @@ function monitoring() {
 	set_repo_version "${PROMETHEUS_VER}" "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus"
 	kubectl apply --server-side -f "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus/manifests/setup/"
 
-	while ! $(kubectl get servicemonitors --all-namespaces) ; do
+	while ! [[ $(kubectl get servicemonitors --all-namespaces) ]]; do
 		echo "Waiting for prometheus crds"
 		sleep 10
 	done
