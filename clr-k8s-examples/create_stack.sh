@@ -27,7 +27,7 @@ KATA_VER="${CLRK8S_KATA_VER:-2.3.3}"
 ROOK_VER="${CLRK8S_ROOK_VER:-v1.8.6}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.6.1}"
 DASHBOARD_VER="${CLRK8S_DASHBOARD_VER:-v2.0.0-beta2}"
-INGRES_VER="${CLRK8S_INGRES_VER:-nginx-0.26.1}"
+INGRES_VER="${CLRK8S_INGRES_VER:-controller-v1.3.0}"
 EFK_VER="${CLRK8S_EFK_VER:-v1.15.1}"
 METALLB_VER="${CLRK8S_METALLB_VER:-v0.8.3}"
 NPD_VER="${CLRK8S_NPD_VER:-v0.6.6}"
@@ -258,10 +258,11 @@ function monitoring() {
 	set_repo_version "${PROMETHEUS_VER}" "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus"
 	kubectl apply --server-side -f "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/kube-prometheus/manifests/setup/"
 
-	while ! [[ $(kubectl get servicemonitors --all-namespaces) ]]; do
+	while ! [[ $(kubectl get crd alertmanagers.monitoring.coreos.com prometheuses.monitoring.coreos.com prometheusrules.monitoring.coreos.com servicemonitors.monitoring.coreos.com) ]]; do
 		echo "Waiting for prometheus crds"
 		sleep 10
 	done
+
 	kubectl apply -k "${PROMETHEUS_DIR}/overlays/${PROMETHEUS_VER}/"
 
 	#Expose the dashboards
