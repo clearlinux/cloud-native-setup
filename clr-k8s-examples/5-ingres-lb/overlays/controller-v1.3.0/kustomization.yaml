@@ -1,0 +1,2 @@
+resources:
+  - ingress-nginx/deploy/static/provider/baremetal/deploy.yaml
