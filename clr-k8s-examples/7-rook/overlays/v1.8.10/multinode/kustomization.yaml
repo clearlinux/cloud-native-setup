@@ -1,0 +1,6 @@
+resources:
+  - rook/deploy/examples/cluster.yaml
+  - rook/deploy/examples/csi/rbd/storageclass.yaml
+
+patchesStrategicMerge:
+  - probe_timeout.yaml

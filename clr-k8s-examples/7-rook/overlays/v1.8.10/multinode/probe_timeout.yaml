@@ -1,0 +1,16 @@
+---
+apiVersion:  ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  healthCheck:
+    startupProbe:
+      osd:
+        probe:
+           timeoutSeconds: 120
+           initialDelaySeconds: 100
+           periodSeconds: 10
+           failureThreshold: 10
+           successThreshold: 1

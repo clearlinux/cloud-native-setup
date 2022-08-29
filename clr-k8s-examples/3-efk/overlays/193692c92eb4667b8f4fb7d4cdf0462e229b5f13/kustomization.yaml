@@ -1,0 +1,8 @@
+resources:
+  - instrumentation-addons/fluentd-elasticsearch/create-logging-namespace.yaml
+  - instrumentation-addons/fluentd-elasticsearch/es-service.yaml
+  - instrumentation-addons/fluentd-elasticsearch/es-statefulset.yaml
+  - instrumentation-addons/fluentd-elasticsearch/fluentd-es-configmap.yaml
+  - instrumentation-addons/fluentd-elasticsearch/fluentd-es-ds.yaml
+  - instrumentation-addons/fluentd-elasticsearch/kibana-deployment.yaml
+  - instrumentation-addons/fluentd-elasticsearch/kibana-service.yaml
