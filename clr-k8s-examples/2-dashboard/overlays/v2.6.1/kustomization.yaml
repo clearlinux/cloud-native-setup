@@ -1,0 +1,4 @@
+resources:
+  - dashboard/aio/deploy/recommended.yaml
+  - dashboard-admin.yaml
+

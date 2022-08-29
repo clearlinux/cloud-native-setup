@@ -18,17 +18,17 @@ LOAD_BALANCER_IP=${LOAD_BALANCER_IP:-""}
 LOAD_BALANCER_PORT="${LOAD_BALANCER_PORT:-6444}"
 
 # versions
-CANAL_VER="${CLRK8S_CANAL_VER:-v3.22}"
+CANAL_VER="${CLRK8S_CANAL_VER:-v3.24}"
 CILIUM_VER="${CLRK8S_CILIUM_VER:-v1.9.13}"
 FLANNEL_VER="${CLRK8S_FLANNEL_VER:-v0.16.3}"
 CILIUM_VAL_OVERRIDE=""
 K8S_VER="${CLRK8S_K8S_VER:-}"
-KATA_VER="${CLRK8S_KATA_VER:-2.3.3}"
-ROOK_VER="${CLRK8S_ROOK_VER:-v1.8.6}"
+KATA_VER="${CLRK8S_KATA_VER:-2.4.0}"
+ROOK_VER="${CLRK8S_ROOK_VER:-v1.8.10}"
 METRICS_VER="${CLRK8S_METRICS_VER:-v0.6.1}"
-DASHBOARD_VER="${CLRK8S_DASHBOARD_VER:-v2.0.0-beta2}"
+DASHBOARD_VER="${CLRK8S_DASHBOARD_VER:-v2.6.1}"
 INGRES_VER="${CLRK8S_INGRES_VER:-controller-v1.3.0}"
-EFK_VER="${CLRK8S_EFK_VER:-v1.15.1}"
+EFK_VER="${CLRK8S_EFK_VER:-193692c92eb4667b8f4fb7d4cdf0462e229b5f13}"
 METALLB_VER="${CLRK8S_METALLB_VER:-v0.8.3}"
 NPD_VER="${CLRK8S_NPD_VER:-v0.6.6}"
 PROMETHEUS_VER="${CLRK8S_PROMETHEUS_VER:-v0.10.0}"
@@ -222,7 +222,7 @@ function storage() {
 	ROOK_URL="https://github.com/rook/rook.git"
 	ROOK_DIR=7-rook
 
-  # This function might be called standalone, so good to check the mode we are in.
+	# This function might be called standalone, so good to check the mode we are in.
 	if [ "$(kubectl get nodes --no-headers | wc -l)" -eq 1 ]; then
 		mode="standalone"
 	fi
@@ -278,6 +278,8 @@ function dashboard() {
 	get_repo "${DASHBOARD_URL}" "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}"
 	set_repo_version "${DASHBOARD_VER}" "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}/dashboard"
 	kubectl apply -k "${DASHBOARD_DIR}/overlays/${DASHBOARD_VER}"
+
+	echo 'Run "kubectl -n kubernetes-dashboard create token admin-user" to create an admin token'
 }
 
 function ingres() {
@@ -291,10 +293,10 @@ function ingres() {
 
 function efk() {
 	EFK_VER=${1:-$EFK_VER}
-	EFK_URL="https://github.com/kubernetes/kubernetes.git"
+	EFK_URL="https://github.com/kubernetes-sigs/instrumentation-addons.git"
 	EFK_DIR="3-efk"
 	get_repo "${EFK_URL}" "${EFK_DIR}/overlays/${EFK_VER}"
-	set_repo_version "${EFK_VER}" "${EFK_DIR}/overlays/${EFK_VER}/kubernetes"
+	set_repo_version "${EFK_VER}" "${EFK_DIR}/overlays/${EFK_VER}/instrumentation-addons"
 	kubectl apply -k "${EFK_DIR}/overlays/${EFK_VER}"
 
 }
@@ -355,7 +357,6 @@ function minimal() {
 
 function all() {
 	minimal
-	storage
 	monitoring
 	miscellaneous
 }
@@ -396,6 +397,9 @@ command_handlers[npd]=npd
 command_handlers[nfd]=nfd
 command_handlers[kata]=kata
 command_handlers[metrics]=metrics
+command_handlers[dashboard]=dashboard
+command_handlers[efk]=efk
+command_handlers[ingres]=ingres
 
 declare -A command_help
 command_help[init]="Only inits a cluster using kubeadm"
