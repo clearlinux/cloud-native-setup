@@ -357,6 +357,7 @@ function minimal() {
 
 function all() {
 	minimal
+  storage
 	monitoring
 	miscellaneous
 }
