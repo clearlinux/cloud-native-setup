@@ -115,9 +115,17 @@ function cluster_init() {
 		fi
 	fi
 
-	#Ensure single node k8s works
+	#Ensure single node k8s works both pre and post v1.25
 	if [ "$(kubectl get nodes | wc -l)" -eq 2 ]; then
-		kubectl taint nodes --all node-role.kubernetes.io/master-
+		minor=$(kubeadm version -o short | cut -f 2 -d "." )
+		if [ $minor -ge "25" ]; then
+			kubectl taint nodes --all  node-role.kubernetes.io/control-plane-
+		elif [ $minor -eq "24" ]; then
+			kubectl taint nodes --all  node-role.kubernetes.io/control-plane-
+			kubectl taint nodes --all  node-role.kubernetes.io/master-
+		else
+			kubectl taint nodes --all  node-role.kubernetes.io/master-
+		fi
 		mode="standalone"
 	fi
 }
